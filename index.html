@@ -9,6 +9,8 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -27,7 +29,7 @@
             -webkit-appearance: none;
             appearance: none;
             height: 8px;
-            background: linear-gradient(to right, #3b82f6, #6366f1);
+            background: linear-gradient(to right, #D4A574, #B8860B);
             border-radius: 5px;
             outline: none;
         }
@@ -38,7 +40,7 @@
             width: 20px;
             height: 20px;
             background: white;
-            border: 3px solid #3b82f6;
+            border: 3px solid #B8860B;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -48,7 +50,7 @@
             width: 20px;
             height: 20px;
             background: white;
-            border: 3px solid #3b82f6;
+            border: 3px solid #B8860B;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -60,17 +62,17 @@
         }
         
         ::-webkit-scrollbar-track {
-            background: #f1f5f9;
+            background: #f5f5f4;
             border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, #3b82f6, #6366f1);
+            background: linear-gradient(to bottom, #D4A574, #B8860B);
             border-radius: 4px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(to bottom, #2563eb, #4f46e5);
+            background: linear-gradient(to bottom, #C19464, #A67C0A);
         }
         
         /* Emoji animations */
@@ -113,6 +115,15 @@
         .emoji-slow-wander {
             animation: wander-horizontal 10s ease-in-out infinite;
         }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 </head>
 <body>
@@ -124,60 +135,60 @@
         // Sample data structure - with historical evolution
         const regionsDataByYear = {
             1990: {
-                "Île-de-France": { grandes: 70, elevage: 12, maraichage: 5, viticulture: 0, fruits: 2, autres: 11 },
-                "Hauts-de-France": { grandes: 52, elevage: 20, maraichage: 18, viticulture: 0, fruits: 2, autres: 8 },
-                "Grand Est": { grandes: 45, elevage: 18, maraichage: 4, viticulture: 18, fruits: 6, autres: 9 },
-                "Normandie": { grandes: 25, elevage: 60, maraichage: 6, viticulture: 0, fruits: 3, autres: 6 },
-                "Bretagne": { grandes: 12, elevage: 72, maraichage: 6, viticulture: 0, fruits: 2, autres: 8 },
-                "Pays de la Loire": { grandes: 30, elevage: 48, maraichage: 6, viticulture: 4, fruits: 3, autres: 9 },
-                "Centre-Val de Loire": { grandes: 55, elevage: 25, maraichage: 3, viticulture: 8, fruits: 2, autres: 7 },
-                "Bourgogne-Franche-Comté": { grandes: 40, elevage: 35, maraichage: 2, viticulture: 13, fruits: 2, autres: 8 },
-                "Nouvelle-Aquitaine": { grandes: 22, elevage: 35, maraichage: 3, viticulture: 28, fruits: 5, autres: 7 },
-                "Occitanie": { grandes: 28, elevage: 25, maraichage: 5, viticulture: 23, fruits: 9, autres: 10 },
-                "Auvergne-Rhône-Alpes": { grandes: 18, elevage: 50, maraichage: 5, viticulture: 13, fruits: 7, autres: 7 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 8, elevage: 22, maraichage: 18, viticulture: 28, fruits: 18, autres: 6 }
+                "Île-de-France": { grandes: 70, élevage: 12, maraîchage: 5, viticulture: 0, fruits: 2, autres: 11 },
+                "Hauts-de-France": { grandes: 52, élevage: 20, maraîchage: 18, viticulture: 0, fruits: 2, autres: 8 },
+                "Grand Est": { grandes: 45, élevage: 18, maraîchage: 4, viticulture: 18, fruits: 6, autres: 9 },
+                "Normandie": { grandes: 25, élevage: 60, maraîchage: 6, viticulture: 0, fruits: 3, autres: 6 },
+                "Bretagne": { grandes: 12, élevage: 72, maraîchage: 6, viticulture: 0, fruits: 2, autres: 8 },
+                "Pays de la Loire": { grandes: 30, élevage: 48, maraîchage: 6, viticulture: 4, fruits: 3, autres: 9 },
+                "Centre-Val de Loire": { grandes: 55, élevage: 25, maraîchage: 3, viticulture: 8, fruits: 2, autres: 7 },
+                "Bourgogne-Franche-Comté": { grandes: 40, élevage: 35, maraîchage: 2, viticulture: 13, fruits: 2, autres: 8 },
+                "Nouvelle-Aquitaine": { grandes: 22, élevage: 35, maraîchage: 3, viticulture: 28, fruits: 5, autres: 7 },
+                "Occitanie": { grandes: 28, élevage: 25, maraîchage: 5, viticulture: 23, fruits: 9, autres: 10 },
+                "Auvergne-Rhône-Alpes": { grandes: 18, élevage: 50, maraîchage: 5, viticulture: 13, fruits: 7, autres: 7 },
+                "Provence-Alpes-Côte d'Azur": { grandes: 8, élevage: 22, maraîchage: 18, viticulture: 28, fruits: 18, autres: 6 }
             },
             2000: {
-                "Île-de-France": { grandes: 74, elevage: 10, maraichage: 4, viticulture: 0, fruits: 1, autres: 11 },
-                "Hauts-de-France": { grandes: 56, elevage: 18, maraichage: 17, viticulture: 0, fruits: 2, autres: 7 },
-                "Grand Est": { grandes: 47, elevage: 17, maraichage: 3, viticulture: 19, fruits: 5, autres: 9 },
-                "Normandie": { grandes: 27, elevage: 55, maraichage: 7, viticulture: 0, fruits: 3, autres: 8 },
-                "Bretagne": { grandes: 13, elevage: 68, maraichage: 7, viticulture: 0, fruits: 2, autres: 10 },
-                "Pays de la Loire": { grandes: 32, elevage: 44, maraichage: 7, viticulture: 4, fruits: 3, autres: 10 },
-                "Centre-Val de Loire": { grandes: 57, elevage: 23, maraichage: 3, viticulture: 9, fruits: 2, autres: 6 },
-                "Bourgogne-Franche-Comté": { grandes: 42, elevage: 33, maraichage: 2, viticulture: 14, fruits: 2, autres: 7 },
-                "Nouvelle-Aquitaine": { grandes: 23, elevage: 33, maraichage: 3, viticulture: 29, fruits: 5, autres: 7 },
-                "Occitanie": { grandes: 29, elevage: 22, maraichage: 5, viticulture: 24, fruits: 9, autres: 11 },
-                "Auvergne-Rhône-Alpes": { grandes: 19, elevage: 47, maraichage: 5, viticulture: 14, fruits: 7, autres: 8 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 9, elevage: 21, maraichage: 19, viticulture: 29, fruits: 16, autres: 6 }
+                "Île-de-France": { grandes: 74, élevage: 10, maraîchage: 4, viticulture: 0, fruits: 1, autres: 11 },
+                "Hauts-de-France": { grandes: 56, élevage: 18, maraîchage: 17, viticulture: 0, fruits: 2, autres: 7 },
+                "Grand Est": { grandes: 47, élevage: 17, maraîchage: 3, viticulture: 19, fruits: 5, autres: 9 },
+                "Normandie": { grandes: 27, élevage: 55, maraîchage: 7, viticulture: 0, fruits: 3, autres: 8 },
+                "Bretagne": { grandes: 13, élevage: 68, maraîchage: 7, viticulture: 0, fruits: 2, autres: 10 },
+                "Pays de la Loire": { grandes: 32, élevage: 44, maraîchage: 7, viticulture: 4, fruits: 3, autres: 10 },
+                "Centre-Val de Loire": { grandes: 57, élevage: 23, maraîchage: 3, viticulture: 9, fruits: 2, autres: 6 },
+                "Bourgogne-Franche-Comté": { grandes: 42, élevage: 33, maraîchage: 2, viticulture: 14, fruits: 2, autres: 7 },
+                "Nouvelle-Aquitaine": { grandes: 23, élevage: 33, maraîchage: 3, viticulture: 29, fruits: 5, autres: 7 },
+                "Occitanie": { grandes: 29, élevage: 22, maraîchage: 5, viticulture: 24, fruits: 9, autres: 11 },
+                "Auvergne-Rhône-Alpes": { grandes: 19, élevage: 47, maraîchage: 5, viticulture: 14, fruits: 7, autres: 8 },
+                "Provence-Alpes-Côte d'Azur": { grandes: 9, élevage: 21, maraîchage: 19, viticulture: 29, fruits: 16, autres: 6 }
             },
             2010: {
-                "Île-de-France": { grandes: 76, elevage: 9, maraichage: 4, viticulture: 0, fruits: 1, autres: 10 },
-                "Hauts-de-France": { grandes: 58, elevage: 16, maraichage: 16, viticulture: 0, fruits: 2, autres: 8 },
-                "Grand Est": { grandes: 48, elevage: 16, maraichage: 3, viticulture: 20, fruits: 5, autres: 8 },
-                "Normandie": { grandes: 28, elevage: 52, maraichage: 7, viticulture: 0, fruits: 4, autres: 9 },
-                "Bretagne": { grandes: 14, elevage: 67, maraichage: 7, viticulture: 0, fruits: 2, autres: 10 },
-                "Pays de la Loire": { grandes: 33, elevage: 42, maraichage: 7, viticulture: 4, fruits: 4, autres: 10 },
-                "Centre-Val de Loire": { grandes: 58, elevage: 22, maraichage: 3, viticulture: 10, fruits: 2, autres: 5 },
-                "Bourgogne-Franche-Comté": { grandes: 43, elevage: 32, maraichage: 2, viticulture: 15, fruits: 2, autres: 6 },
-                "Nouvelle-Aquitaine": { grandes: 24, elevage: 32, maraichage: 3, viticulture: 30, fruits: 5, autres: 6 },
-                "Occitanie": { grandes: 29, elevage: 21, maraichage: 5, viticulture: 25, fruits: 10, autres: 10 },
-                "Auvergne-Rhône-Alpes": { grandes: 19, elevage: 46, maraichage: 6, viticulture: 15, fruits: 8, autres: 6 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 9, elevage: 20, maraichage: 20, viticulture: 30, fruits: 15, autres: 6 }
+                "Île-de-France": { grandes: 76, élevage: 9, maraîchage: 4, viticulture: 0, fruits: 1, autres: 10 },
+                "Hauts-de-France": { grandes: 58, élevage: 16, maraîchage: 16, viticulture: 0, fruits: 2, autres: 8 },
+                "Grand Est": { grandes: 48, élevage: 16, maraîchage: 3, viticulture: 20, fruits: 5, autres: 8 },
+                "Normandie": { grandes: 28, élevage: 52, maraîchage: 7, viticulture: 0, fruits: 4, autres: 9 },
+                "Bretagne": { grandes: 14, élevage: 67, maraîchage: 7, viticulture: 0, fruits: 2, autres: 10 },
+                "Pays de la Loire": { grandes: 33, élevage: 42, maraîchage: 7, viticulture: 4, fruits: 4, autres: 10 },
+                "Centre-Val de Loire": { grandes: 58, élevage: 22, maraîchage: 3, viticulture: 10, fruits: 2, autres: 5 },
+                "Bourgogne-Franche-Comté": { grandes: 43, élevage: 32, maraîchage: 2, viticulture: 15, fruits: 2, autres: 6 },
+                "Nouvelle-Aquitaine": { grandes: 24, élevage: 32, maraîchage: 3, viticulture: 30, fruits: 5, autres: 6 },
+                "Occitanie": { grandes: 29, élevage: 21, maraîchage: 5, viticulture: 25, fruits: 10, autres: 10 },
+                "Auvergne-Rhône-Alpes": { grandes: 19, élevage: 46, maraîchage: 6, viticulture: 15, fruits: 8, autres: 6 },
+                "Provence-Alpes-Côte d'Azur": { grandes: 9, élevage: 20, maraîchage: 20, viticulture: 30, fruits: 15, autres: 6 }
             },
             2020: {
-                "Île-de-France": { grandes: 79, elevage: 8, maraichage: 4, viticulture: 0, fruits: 1, autres: 8 },
-                "Hauts-de-France": { grandes: 60, elevage: 15, maraichage: 15, viticulture: 0, fruits: 2, autres: 8 },
-                "Grand Est": { grandes: 50, elevage: 15, maraichage: 3, viticulture: 20, fruits: 5, autres: 7 },
-                "Normandie": { grandes: 30, elevage: 50, maraichage: 8, viticulture: 0, fruits: 4, autres: 8 },
-                "Bretagne": { grandes: 15, elevage: 65, maraichage: 8, viticulture: 0, fruits: 3, autres: 9 },
-                "Pays de la Loire": { grandes: 35, elevage: 40, maraichage: 8, viticulture: 5, fruits: 4, autres: 8 },
-                "Centre-Val de Loire": { grandes: 60, elevage: 20, maraichage: 4, viticulture: 10, fruits: 2, autres: 4 },
-                "Bourgogne-Franche-Comté": { grandes: 45, elevage: 30, maraichage: 3, viticulture: 15, fruits: 2, autres: 5 },
-                "Nouvelle-Aquitaine": { grandes: 25, elevage: 30, maraichage: 4, viticulture: 30, fruits: 6, autres: 5 },
-                "Occitanie": { grandes: 30, elevage: 20, maraichage: 6, viticulture: 25, fruits: 10, autres: 9 },
-                "Auvergne-Rhône-Alpes": { grandes: 20, elevage: 45, maraichage: 6, viticulture: 15, fruits: 8, autres: 6 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 10, elevage: 20, maraichage: 20, viticulture: 30, fruits: 15, autres: 5 }
+                "Île-de-France": { grandes: 79, élevage: 8, maraîchage: 4, viticulture: 0, fruits: 1, autres: 8 },
+                "Hauts-de-France": { grandes: 60, élevage: 15, maraîchage: 15, viticulture: 0, fruits: 2, autres: 8 },
+                "Grand Est": { grandes: 50, élevage: 15, maraîchage: 3, viticulture: 20, fruits: 5, autres: 7 },
+                "Normandie": { grandes: 30, élevage: 50, maraîchage: 8, viticulture: 0, fruits: 4, autres: 8 },
+                "Bretagne": { grandes: 15, élevage: 65, maraîchage: 8, viticulture: 0, fruits: 3, autres: 9 },
+                "Pays de la Loire": { grandes: 35, élevage: 40, maraîchage: 8, viticulture: 5, fruits: 4, autres: 8 },
+                "Centre-Val de Loire": { grandes: 60, élevage: 20, maraîchage: 4, viticulture: 10, fruits: 2, autres: 4 },
+                "Bourgogne-Franche-Comté": { grandes: 45, élevage: 30, maraîchage: 3, viticulture: 15, fruits: 2, autres: 5 },
+                "Nouvelle-Aquitaine": { grandes: 25, élevage: 30, maraîchage: 4, viticulture: 30, fruits: 6, autres: 5 },
+                "Occitanie": { grandes: 30, élevage: 20, maraîchage: 6, viticulture: 25, fruits: 10, autres: 9 },
+                "Auvergne-Rhône-Alpes": { grandes: 20, élevage: 45, maraîchage: 6, viticulture: 15, fruits: 8, autres: 6 },
+                "Provence-Alpes-Côte d'Azur": { grandes: 10, élevage: 20, maraîchage: 20, viticulture: 30, fruits: 15, autres: 5 }
             }
         };
 
@@ -218,18 +229,18 @@
         };
 
         const colors = {
-            grandes: '#E8C468',
-            elevage: '#8B4513',
-            maraichage: '#90EE90',
-            viticulture: '#9370DB',
-            fruits: '#FF7F50',
-            autres: '#D3D3D3'
+            grandes: '#D4A574',      // Beige doré (céréales)
+            élevage: '#8B6F47',      // Brun terre (bétail)
+            maraîchage: '#6B8E4E',   // Vert olive (légumes)
+            viticulture: '#7D5BA6',  // Pourpre profond (vin)
+            fruits: '#C17767',       // Terracotta (fruits)
+            autres: '#9CA3AF'        // Gris neutre
         };
 
         const emojis = {
             grandes: '🌾',
-            elevage: '🐄',
-            maraichage: '🥬',
+            élevage: '🐄',
+            maraîchage: '🥬',
             viticulture: '🍷',
             fruits: '🍎',
             autres: '📦'
@@ -240,8 +251,10 @@
             const [selectedRegion, setSelectedRegion] = useState(null);
             const [selectedYear, setSelectedYear] = useState(2020);
             const [indicator, setIndicator] = useState('dominant');
+            const [isPlaying, setIsPlaying] = useState(false);
             const mapRef = useRef(null);
             const radarRef = useRef(null);
+            const evolutionRef = useRef(null);
 
             // Load real France GeoJSON data
             useEffect(() => {
@@ -260,6 +273,21 @@
                         });
                     });
             }, []);
+
+            // Play mode - auto-advance years
+            useEffect(() => {
+                if (!isPlaying) return;
+                
+                const years = [1990, 2000, 2010, 2020];
+                const currentIndex = years.indexOf(selectedYear);
+                
+                const timer = setTimeout(() => {
+                    const nextIndex = (currentIndex + 1) % years.length;
+                    setSelectedYear(years[nextIndex]);
+                }, 2000); // Change year every 2 seconds
+                
+                return () => clearTimeout(timer);
+            }, [isPlaying, selectedYear]);
 
             const getDominant = (data) => {
                 const types = Object.entries(data).filter(([key]) => 
@@ -387,7 +415,7 @@
                         
                         // Add emojis for crop distribution (only when showing dominant indicator)
                         if (data && indicator === 'dominant') {
-                            const types = ['grandes', 'elevage', 'maraichage', 'viticulture', 'fruits', 'autres'];
+                            const types = ['grandes', 'élevage', 'maraîchage', 'viticulture', 'fruits', 'autres'];
                             const significantCrops = types
                                 .map(type => ({ type, value: data[type] }))
                                 .filter(crop => crop.value >= 15)
@@ -397,8 +425,8 @@
                             // Animation classes for different crop types
                             const animationClasses = {
                                 'grandes': 'emoji-slow-wander',  // Céréales se balancent doucement
-                                'elevage': 'emoji-wander',        // Vaches se baladent
-                                'maraichage': 'emoji-float',      // Légumes flottent
+                                'élevage': 'emoji-wander',        // Vaches se baladent
+                                'maraîchage': 'emoji-float',      // Légumes flottent
                                 'viticulture': 'emoji-wiggle',    // Vignes se balancent
                                 'fruits': 'emoji-float',          // Fruits flottent
                                 'autres': 'emoji-slow-wander'     // Autres bougent doucement
@@ -468,7 +496,7 @@
                 const g = svg.append("g")
                     .attr("transform", `translate(${width/2}, ${height/2})`);
 
-                const axes = ['grandes', 'elevage', 'maraichage', 'viticulture', 'fruits', 'autres'];
+                const axes = ['grandes', 'élevage', 'maraîchage', 'viticulture', 'fruits', 'autres'];
                 const angleSlice = Math.PI * 2 / axes.length;
 
                 // Grid
@@ -541,41 +569,259 @@
 
             }, [selectedRegion, selectedYear]);
 
+            // Draw evolution chart (line chart showing 1990-2020 progression)
+            useEffect(() => {
+                if (!evolutionRef.current || !selectedRegion) return;
+
+                const width = 350;
+                const height = 200;
+                const margin = { top: 20, right: 80, bottom: 40, left: 50 };
+
+                d3.select(evolutionRef.current).selectAll("*").remove();
+
+                const svg = d3.select(evolutionRef.current)
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+
+                const years = [1990, 2000, 2010, 2020];
+                const types = ['grandes', 'élevage', 'viticulture', 'maraîchage'];
+
+                // Prepare data
+                const data = types.map(type => ({
+                    type,
+                    values: years.map(year => ({
+                        year,
+                        value: regionsDataByYear[year]?.[selectedRegion]?.[type] || 0
+                    }))
+                }));
+
+                const x = d3.scaleLinear()
+                    .domain([1990, 2020])
+                    .range([margin.left, width - margin.right]);
+
+                const y = d3.scaleLinear()
+                    .domain([0, 80])
+                    .range([height - margin.bottom, margin.top]);
+
+                const line = d3.line()
+                    .x(d => x(d.year))
+                    .y(d => y(d.value))
+                    .curve(d3.curveMonotoneX);
+
+                // Draw axes
+                svg.append("g")
+                    .attr("transform", `translate(0,${height - margin.bottom})`)
+                    .call(d3.axisBottom(x).tickFormat(d3.format("d")).ticks(4))
+                    .style("font-size", "10px");
+
+                svg.append("g")
+                    .attr("transform", `translate(${margin.left},0)`)
+                    .call(d3.axisLeft(y).ticks(5))
+                    .style("font-size", "10px");
+
+                // Y axis label
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 15)
+                    .attr("x", -(height / 2))
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "11px")
+                    .attr("fill", "#666")
+                    .text("Part (%)");
+
+                // Draw lines
+                data.forEach(serie => {
+                    svg.append("path")
+                        .datum(serie.values)
+                        .attr("fill", "none")
+                        .attr("stroke", colors[serie.type])
+                        .attr("stroke-width", 2.5)
+                        .attr("d", line);
+
+                    // Add points
+                    svg.selectAll(`.point-${serie.type}`)
+                        .data(serie.values)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", d => x(d.year))
+                        .attr("cy", d => y(d.value))
+                        .attr("r", 4)
+                        .attr("fill", colors[serie.type])
+                        .attr("stroke", "white")
+                        .attr("stroke-width", 2);
+
+                    // Add legend
+                    const lastValue = serie.values[serie.values.length - 1];
+                    svg.append("text")
+                        .attr("x", width - margin.right + 5)
+                        .attr("y", y(lastValue.value) + 4)
+                        .attr("font-size", "10px")
+                        .attr("fill", colors[serie.type])
+                        .attr("font-weight", "600")
+                        .text(serie.type);
+                });
+
+                // Highlight current year
+                svg.append("line")
+                    .attr("x1", x(selectedYear))
+                    .attr("x2", x(selectedYear))
+                    .attr("y1", margin.top)
+                    .attr("y2", height - margin.bottom)
+                    .attr("stroke", "#f59e0b")
+                    .attr("stroke-width", 2)
+                    .attr("stroke-dasharray", "5,5");
+
+            }, [selectedRegion, selectedYear]);
+
             const regionStats = selectedRegion ? regionsDataByYear[selectedYear]?.[selectedRegion] : null;
             const yearStats = selectedRegion && historicalData[selectedYear] ? 
                 historicalData[selectedYear][selectedRegion] : null;
 
+            // Export functions
+            const exportMapAsPNG = async () => {
+                try {
+                    const mapElement = mapRef.current.parentElement;
+                    const canvas = await html2canvas(mapElement, {
+                        backgroundColor: '#fafaf9',
+                        scale: 2
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.download = `agriscopefr-carte-${selectedYear}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                } catch (error) {
+                    console.error('Export error:', error);
+                    alert('Erreur lors de l\'export. Veuillez réessayer.');
+                }
+            };
+
+            const exportReportAsPDF = async () => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                    // Title
+                    pdf.setFontSize(20);
+                    pdf.setTextColor(120, 90, 60);
+                    pdf.text('AgriScopeFR - Rapport', 20, 20);
+                    
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(87, 83, 78);
+                    pdf.text(`Agriculture en France - Année ${selectedYear}`, 20, 30);
+                    
+                    // Capture map
+                    const mapElement = mapRef.current.parentElement;
+                    const canvas = await html2canvas(mapElement, {
+                        backgroundColor: '#fafaf9',
+                        scale: 1.5
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    pdf.addImage(imgData, 'PNG', 20, 40, 170, 120);
+                    
+                    // Add data if region selected
+                    if (selectedRegion && regionStats) {
+                        pdf.setFontSize(14);
+                        pdf.setTextColor(180, 124, 68);
+                        pdf.text(`Région: ${selectedRegion}`, 20, 170);
+                        
+                        pdf.setFontSize(10);
+                        pdf.setTextColor(0, 0, 0);
+                        let yPos = 180;
+                        
+                        pdf.text(`Grandes cultures: ${regionStats.grandes}%`, 30, yPos);
+                        pdf.text(`Élevage: ${regionStats.élevage}%`, 30, yPos + 7);
+                        pdf.text(`Viticulture: ${regionStats.viticulture}%`, 30, yPos + 14);
+                        pdf.text(`Maraîchage: ${regionStats.maraîchage}%`, 30, yPos + 21);
+                        
+                        if (yearStats) {
+                            pdf.text(`Eau: ${yearStats.water} m³/ha`, 110, yPos);
+                            pdf.text(`GES: ${yearStats.emissions} Mt CO₂eq`, 110, yPos + 7);
+                        }
+                    }
+                    
+                    // Footer
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(156, 163, 175);
+                    pdf.text('Généré par AgriScopeFR - Visualisation interactive de données agricoles', 20, 285);
+                    
+                    pdf.save(`agriscopefr-rapport-${selectedYear}.pdf`);
+                } catch (error) {
+                    console.error('PDF export error:', error);
+                    alert('Erreur lors de la création du PDF. Veuillez réessayer.');
+                }
+            };
+
             return (
-                <div className="h-screen bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden flex flex-col">
+                <div className="h-screen bg-stone-100 overflow-hidden flex flex-col">
                     {/* Compact Header */}
-                    <header className="bg-white shadow-md px-6 py-4 border-b-2 border-blue-500">
+                    <header className="bg-gradient-to-r from-amber-50 to-stone-100 shadow-md px-6 py-4 border-b-2 border-amber-600">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                                    🇫🇷 <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">AgriScopeFR</span>
+                                <h1 className="text-3xl font-bold text-stone-800 flex items-center gap-3">
+                                    <span className="text-amber-700">🌾</span>
+                                    <span>AgriScopeFR</span>
                                 </h1>
-                                <p className="text-sm text-gray-600 mt-1">Agriculture en France : Cultures & Territoires (1990-2020)</p>
+                                <p className="text-sm text-stone-600 mt-1 font-medium">Observatoire de l'agriculture française • 1990-2020</p>
                             </div>
                             
-                            {/* Year Slider in Header */}
-                            <div className="bg-blue-50 px-6 py-3 rounded-lg border border-blue-200">
-                                <label className="block text-sm font-semibold text-blue-900 mb-1">
-                                    📅 Année : <span className="text-blue-600">{selectedYear}</span>
-                                </label>
-                                <input
-                                    type="range"
-                                    min="1990"
-                                    max="2020"
-                                    step="10"
-                                    value={selectedYear}
-                                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                                    className="w-64"
-                                />
-                                <div className="flex justify-between text-xs text-blue-600 mt-1">
-                                    <span>1990</span>
-                                    <span>2000</span>
-                                    <span>2010</span>
-                                    <span>2020</span>
+                            {/* Controls Group */}
+                            <div className="flex items-center gap-4">
+                                {/* Play/Pause Button */}
+                                <button
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    className={`px-5 py-2.5 rounded-md font-semibold shadow-md transition-all border-2 ${
+                                        isPlaying 
+                                            ? 'bg-stone-700 hover:bg-stone-800 text-white border-stone-800' 
+                                            : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-700'
+                                    }`}
+                                >
+                                    {isPlaying ? '❚❚ Pause' : '▶ Lecture'}
+                                </button>
+                                
+                                {/* Year Slider */}
+                                <div className="bg-white px-6 py-3 rounded-md border-2 border-stone-300">
+                                    <label className="block text-sm font-semibold text-stone-700 mb-1">
+                                        Année : <span className="text-amber-700">{selectedYear}</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="1990"
+                                        max="2020"
+                                        step="10"
+                                        value={selectedYear}
+                                        onChange={(e) => {
+                                            setSelectedYear(Number(e.target.value));
+                                            setIsPlaying(false); // Stop playing when manually changing
+                                        }}
+                                        className="w-64"
+                                    />
+                                    <div className="flex justify-between text-xs text-stone-600 mt-1 font-medium">
+                                        <span>1990</span>
+                                        <span>2000</span>
+                                        <span>2010</span>
+                                        <span>2020</span>
+                                    </div>
+                                </div>
+                                
+                                {/* Export Buttons */}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={exportMapAsPNG}
+                                        className="px-4 py-2.5 bg-stone-600 hover:bg-stone-700 text-white rounded-md font-semibold shadow-md transition-colors text-sm border-2 border-stone-700"
+                                        title="Exporter la carte en PNG"
+                                    >
+                                        📸 PNG
+                                    </button>
+                                    <button
+                                        onClick={exportReportAsPDF}
+                                        className="px-4 py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-md font-semibold shadow-md transition-colors text-sm border-2 border-amber-800"
+                                        title="Exporter le rapport en PDF"
+                                    >
+                                        📄 PDF
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -586,14 +832,19 @@
                         {/* Left Panel - Map Section */}
                         <div className="col-span-8 bg-white rounded-xl shadow-xl overflow-hidden flex flex-col">
                             {/* Controls Bar */}
-                            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
+                            <div className="bg-gradient-to-r from-stone-700 to-stone-800 p-4 border-b-2 border-amber-600">
                                 <div className="flex items-center justify-between gap-6">
                                     <div className="flex-1">
-                                        <label className="block text-sm font-semibold text-white mb-2">
-                                            📊 Indicateur à afficher :
+                                        <label className="block text-sm font-semibold text-stone-200 mb-2 flex items-center gap-2">
+                                            Indicateur :
+                                            {isPlaying && (
+                                                <span className="px-2 py-1 bg-amber-600 text-white text-xs rounded-md font-bold">
+                                                    ● LECTURE
+                                                </span>
+                                            )}
                                         </label>
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg cursor-pointer transition-colors">
+                                        <div className="flex gap-3">
+                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md cursor-pointer transition-colors border border-white/20">
                                                 <input
                                                     type="radio"
                                                     value="dominant"
@@ -601,9 +852,9 @@
                                                     onChange={(e) => setIndicator(e.target.value)}
                                                     className="mr-2"
                                                 />
-                                                <span className="text-white text-sm">🌾 Cultures</span>
+                                                <span className="text-white text-sm font-medium">🌾 Cultures</span>
                                             </label>
-                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg cursor-pointer transition-colors">
+                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md cursor-pointer transition-colors border border-white/20">
                                                 <input
                                                     type="radio"
                                                     value="water"
@@ -611,9 +862,9 @@
                                                     onChange={(e) => setIndicator(e.target.value)}
                                                     className="mr-2"
                                                 />
-                                                <span className="text-white text-sm">💧 Eau</span>
+                                                <span className="text-white text-sm font-medium">💧 Eau</span>
                                             </label>
-                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg cursor-pointer transition-colors">
+                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md cursor-pointer transition-colors border border-white/20">
                                                 <input
                                                     type="radio"
                                                     value="emissions"
@@ -621,7 +872,7 @@
                                                     onChange={(e) => setIndicator(e.target.value)}
                                                     className="mr-2"
                                                 />
-                                                <span className="text-white text-sm">🌍 GES</span>
+                                                <span className="text-white text-sm font-medium">🌍 GES</span>
                                             </label>
                                         </div>
                                     </div>
@@ -631,20 +882,20 @@
                             </div>
 
                             {/* Map Container */}
-                            <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50">
+                            <div className="flex-1 relative overflow-hidden bg-stone-50">
                                 <div ref={mapRef} className="absolute inset-0 flex items-center justify-center">
                                     {!franceGeoJSON && (
                                         <div className="text-center">
-                                            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                                            <p className="text-blue-600 font-semibold">Chargement de la carte...</p>
+                                            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-600 mx-auto mb-4"></div>
+                                            <p className="text-stone-700 font-semibold">Chargement de la carte...</p>
                                         </div>
                                     )}
                                 </div>
                                 
                                 {/* Legend Overlay */}
-                                <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-5 max-w-md border-2 border-blue-200">
-                                    <p className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                        📌 <span>Légende</span>
+                                <div className="absolute bottom-4 left-4 bg-white/98 backdrop-blur-sm rounded-md shadow-lg p-5 max-w-md border-2 border-stone-300">
+                                    <p className="text-base font-bold text-stone-800 mb-3 flex items-center gap-2">
+                                        <span className="text-amber-700">📍</span> <span>Légende</span>
                                     </p>
                                     
                                     {indicator === 'dominant' && (
@@ -689,11 +940,13 @@
 
                                 {/* Selected Region Info Overlay */}
                                 {selectedRegion && (
-                                    <div className="absolute top-4 right-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-xl p-4 max-w-sm">
+                                    <div className="absolute top-4 right-4 bg-gradient-to-br from-amber-700 to-amber-800 text-white rounded-md shadow-xl p-4 max-w-sm border-2 border-amber-900">
                                         <div className="flex items-start justify-between">
                                             <div>
-                                                <h4 className="text-lg font-bold mb-1">📍 {selectedRegion}</h4>
-                                                <p className="text-xs text-blue-100">
+                                                <h4 className="text-lg font-bold mb-1 flex items-center gap-2">
+                                                    <span>📌</span> {selectedRegion}
+                                                </h4>
+                                                <p className="text-xs text-amber-100">
                                                     Cliquez pour revenir à la carte complète
                                                 </p>
                                             </div>
@@ -706,23 +959,36 @@
                         {/* Right Panel - Charts and Stats */}
                         <div className="col-span-4 flex flex-col gap-4 overflow-y-auto">
                             {/* Radar Chart */}
-                            <div className="bg-white rounded-xl shadow-xl p-5">
-                                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                    📊 <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Profil Agricole</span>
+                            <div className="bg-white rounded-lg shadow-md p-5 border border-stone-200">
+                                <h3 className="text-base font-bold text-stone-800 mb-3 pb-2 border-b-2 border-amber-600">
+                                    Profil Agricole
                                 </h3>
                                 <div ref={radarRef} className="flex items-center justify-center" />
                             </div>
 
+                            {/* Evolution Chart - Only shown when region is selected */}
+                            {selectedRegion && (
+                                <div className="bg-white rounded-lg shadow-md p-5 border border-stone-200">
+                                    <h3 className="text-base font-bold text-stone-800 mb-3 pb-2 border-b-2 border-amber-600">
+                                        Évolution 1990-2020
+                                    </h3>
+                                    <div ref={evolutionRef} className="flex items-center justify-center" />
+                                    <p className="text-xs text-stone-500 mt-2 text-center">
+                                        La ligne orange indique l'année sélectionnée
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Statistics */}
-                            <div className="bg-white rounded-xl shadow-xl p-5 flex-1">
-                                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                                    📈 <span className="bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Statistiques</span>
+                            <div className="bg-white rounded-lg shadow-md p-5 flex-1 border border-stone-200">
+                                <h3 className="text-base font-bold text-stone-800 mb-3 pb-2 border-b-2 border-amber-600">
+                                    Statistiques Détaillées
                                 </h3>
                                 
                                 {selectedRegion && regionStats ? (
                                     <div className="space-y-3">
-                                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg">
-                                            <h4 className="font-bold text-blue-900 text-sm mb-2">{selectedRegion} - {selectedYear}</h4>
+                                        <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
+                                            <h4 className="font-bold text-stone-800 text-sm mb-2">{selectedRegion} • {selectedYear}</h4>
                                             <div className="space-y-1.5">
                                                 {Object.entries(regionStats).map(([type, value]) => (
                                                     <div key={type} className="flex items-center justify-between">
@@ -748,23 +1014,23 @@
 
                                         {yearStats && (
                                             <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500">
-                                                    <p className="text-xs text-blue-700 font-medium">💧 Eau</p>
+                                                <div className="bg-blue-50 p-3 rounded-md border-l-4 border-blue-600">
+                                                    <p className="text-xs text-blue-800 font-semibold">💧 Eau</p>
                                                     <p className="text-lg font-bold text-blue-900">{yearStats.water}</p>
-                                                    <p className="text-xs text-blue-600">m³/ha</p>
+                                                    <p className="text-xs text-blue-700">m³/ha</p>
                                                 </div>
-                                                <div className="bg-red-50 p-3 rounded-lg border-l-4 border-red-500">
-                                                    <p className="text-xs text-red-700 font-medium">🌍 GES</p>
-                                                    <p className="text-lg font-bold text-red-900">{yearStats.emissions}</p>
-                                                    <p className="text-xs text-red-600">Mt CO₂eq</p>
+                                                <div className="bg-orange-50 p-3 rounded-md border-l-4 border-orange-600">
+                                                    <p className="text-xs text-orange-800 font-semibold">🌍 GES</p>
+                                                    <p className="text-lg font-bold text-orange-900">{yearStats.emissions}</p>
+                                                    <p className="text-xs text-orange-700">Mt CO₂eq</p>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8 text-gray-400">
+                                    <div className="text-center py-8 text-stone-400">
                                         <div className="text-4xl mb-2">🗺️</div>
-                                        <p className="text-sm">Sélectionnez une région<br/>pour voir les détails</p>
+                                        <p className="text-sm font-medium">Sélectionnez une région<br/>pour voir les détails</p>
                                     </div>
                                 )}
                             </div>
