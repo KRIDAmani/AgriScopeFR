@@ -5,7 +5,7 @@
 Visualisation de données interactive explorant l'évolution de l'agriculture en France sur 30 ans.  
 Projet MOS 9.1 — Amani KRID & Shreeniketh ARASANIPALAI KRISHNAN
 
-[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://votre-username.github.io/agriscopefr/)
+[![Live Demo](https://img.shields.io/badge/demo-live-success)]((https://kridamani.github.io/AgriScopeFR/))
 
 ---
 
