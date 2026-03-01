@@ -94,8 +94,8 @@ Le site sera disponible à : `(https://kridamani.github.io/AgriScopeFR/)`
 
 ## Contact
 
-- Email : votre-email@example.com
-- GitHub : [@votre-username](https://github.com/votre-username)
+- Email : amani.krid@etu.ec-lyon.fr
+- GitHub : [@Amani-KRID]((https://github.com/KRIDAmani))
 
 ---
 
