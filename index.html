@@ -3,1045 +3,976 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriScopeFR - Agriculture en France</title>
+    <title>AgriScopeFR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #F4F1EC;
+            --surface:  #FAFAF8;
+            --ink:      #1C1917;
+            --ink-2:    #57534E;
+            --ink-3:    #A8A29E;
+            --rule:     #E2DDD8;
+            --accent:   #2D5016;
+            --accent-2: #5A7A35;
+            --red:      #8B2520;
+            --blue:     #1E3A5F;
+            --serif:    'Source Serif 4', Georgia, serif;
+            --sans:     'IBM Plex Sans', system-ui, sans-serif;
+            --mono:     'IBM Plex Mono', monospace;
+        }
+
+        html, body { height: 100%; overflow: hidden; }
+
         body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: var(--serif);
+            background: var(--bg);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
         }
-        .region-path {
-            transition: opacity 0.2s;
-        }
-        .region-path:hover {
-            opacity: 0.8;
-        }
-        
-        /* Custom range slider styling */
-        input[type="range"] {
+
+        /* scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+        /* range input */
+        input[type=range] {
             -webkit-appearance: none;
             appearance: none;
-            height: 8px;
-            background: linear-gradient(to right, #D4A574, #B8860B);
-            border-radius: 5px;
+            width: 100%;
+            height: 2px;
+            background: var(--rule);
+            border-radius: 1px;
             outline: none;
+            cursor: pointer;
         }
-        
-        input[type="range"]::-webkit-slider-thumb {
+        input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border: 3px solid #B8860B;
+            width: 14px; height: 14px;
+            background: var(--ink);
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.12s;
         }
-        
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: white;
-            border: 3px solid #B8860B;
-            border-radius: 50%;
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+        input[type=range]::-moz-range-thumb {
+            width: 14px; height: 14px;
+            background: var(--ink);
+            border: none; border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+
+        /* map region hover */
+        .region-path { transition: opacity 0.15s; cursor: pointer; }
+        .region-path:hover { opacity: 0.78; }
+
+        /* emoji map animations — subtle */
+        @keyframes sway  { 0%,100%{transform:translateX(0)}  40%{transform:translateX(5px)}  70%{transform:translateX(-4px)} }
+        @keyframes bob   { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-5px)} }
+        @keyframes tilt  { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
+        .e-sway { animation: sway 7s ease-in-out infinite; }
+        .e-bob  { animation: bob  4s ease-in-out infinite; }
+        .e-tilt { animation: tilt 3s ease-in-out infinite; }
+
+        /* bulletin */
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
         }
-        
-        ::-webkit-scrollbar-track {
-            background: #f5f5f4;
-            border-radius: 4px;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, #D4A574, #B8860B);
-            border-radius: 4px;
+        @keyframes drain {
+            from { width: 100%; }
+            to   { width: 0%; }
         }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(to bottom, #C19464, #A67C0A);
+        .bulletin-in { animation: slideUp 0.38s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .fade-in     { animation: fadeIn 0.4s ease forwards; }
+
+        /* indicator tabs */
+        .ind-tab {
+            font-family: var(--sans);
+            font-size: 12px;
+            font-weight: 400;
+            padding: 5px 12px;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            color: var(--ink-2);
+            background: transparent;
+            transition: all 0.12s;
+            letter-spacing: 0.01em;
         }
-        
-        /* Emoji animations */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+        .ind-tab:hover { color: var(--ink); background: var(--rule); }
+        .ind-tab.on {
+            background: var(--ink);
+            color: var(--surface);
+            border-color: var(--ink);
         }
-        
-        @keyframes wander-horizontal {
-            0%, 100% { transform: translateX(0px); }
-            25% { transform: translateX(15px); }
-            75% { transform: translateX(-15px); }
+
+        /* play button */
+        .play-btn {
+            font-family: var(--sans);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 14px;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            cursor: pointer;
+            background: var(--surface);
+            color: var(--ink-2);
+            transition: all 0.12s;
+            letter-spacing: 0.02em;
         }
-        
-        @keyframes wander-circular {
-            0% { transform: translate(0px, 0px); }
-            25% { transform: translate(10px, -10px); }
-            50% { transform: translate(15px, 5px); }
-            75% { transform: translate(-5px, 10px); }
-            100% { transform: translate(0px, 0px); }
+        .play-btn:hover { border-color: var(--ink-2); color: var(--ink); }
+        .play-btn.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+        /* export buttons */
+        .exp-btn {
+            font-family: var(--sans);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--ink-3);
+            transition: all 0.12s;
         }
-        
-        @keyframes wiggle {
-            0%, 100% { transform: rotate(-3deg); }
-            50% { transform: rotate(3deg); }
+        .exp-btn:hover { color: var(--ink); border-color: var(--ink-2); }
+
+        /* stat bar */
+        .stat-bar-track {
+            width: 80px;
+            height: 3px;
+            background: var(--rule);
+            border-radius: 1px;
+            overflow: hidden;
         }
-        
-        .emoji-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        .emoji-wander {
-            animation: wander-circular 8s ease-in-out infinite;
-        }
-        
-        .emoji-wiggle {
-            animation: wiggle 2s ease-in-out infinite;
-        }
-        
-        .emoji-slow-wander {
-            animation: wander-horizontal 10s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 1px;
+            transition: width 0.4s ease;
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root" style="height:100%;"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
 
-        // Sample data structure - with historical evolution
-        const regionsDataByYear = {
-            1990: {
-                "Île-de-France": { grandes: 70, élevage: 12, maraîchage: 5, viticulture: 0, fruits: 2, autres: 11 },
-                "Hauts-de-France": { grandes: 52, élevage: 20, maraîchage: 18, viticulture: 0, fruits: 2, autres: 8 },
-                "Grand Est": { grandes: 45, élevage: 18, maraîchage: 4, viticulture: 18, fruits: 6, autres: 9 },
-                "Normandie": { grandes: 25, élevage: 60, maraîchage: 6, viticulture: 0, fruits: 3, autres: 6 },
-                "Bretagne": { grandes: 12, élevage: 72, maraîchage: 6, viticulture: 0, fruits: 2, autres: 8 },
-                "Pays de la Loire": { grandes: 30, élevage: 48, maraîchage: 6, viticulture: 4, fruits: 3, autres: 9 },
-                "Centre-Val de Loire": { grandes: 55, élevage: 25, maraîchage: 3, viticulture: 8, fruits: 2, autres: 7 },
-                "Bourgogne-Franche-Comté": { grandes: 40, élevage: 35, maraîchage: 2, viticulture: 13, fruits: 2, autres: 8 },
-                "Nouvelle-Aquitaine": { grandes: 22, élevage: 35, maraîchage: 3, viticulture: 28, fruits: 5, autres: 7 },
-                "Occitanie": { grandes: 28, élevage: 25, maraîchage: 5, viticulture: 23, fruits: 9, autres: 10 },
-                "Auvergne-Rhône-Alpes": { grandes: 18, élevage: 50, maraîchage: 5, viticulture: 13, fruits: 7, autres: 7 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 8, élevage: 22, maraîchage: 18, viticulture: 28, fruits: 18, autres: 6 }
-            },
-            2000: {
-                "Île-de-France": { grandes: 74, élevage: 10, maraîchage: 4, viticulture: 0, fruits: 1, autres: 11 },
-                "Hauts-de-France": { grandes: 56, élevage: 18, maraîchage: 17, viticulture: 0, fruits: 2, autres: 7 },
-                "Grand Est": { grandes: 47, élevage: 17, maraîchage: 3, viticulture: 19, fruits: 5, autres: 9 },
-                "Normandie": { grandes: 27, élevage: 55, maraîchage: 7, viticulture: 0, fruits: 3, autres: 8 },
-                "Bretagne": { grandes: 13, élevage: 68, maraîchage: 7, viticulture: 0, fruits: 2, autres: 10 },
-                "Pays de la Loire": { grandes: 32, élevage: 44, maraîchage: 7, viticulture: 4, fruits: 3, autres: 10 },
-                "Centre-Val de Loire": { grandes: 57, élevage: 23, maraîchage: 3, viticulture: 9, fruits: 2, autres: 6 },
-                "Bourgogne-Franche-Comté": { grandes: 42, élevage: 33, maraîchage: 2, viticulture: 14, fruits: 2, autres: 7 },
-                "Nouvelle-Aquitaine": { grandes: 23, élevage: 33, maraîchage: 3, viticulture: 29, fruits: 5, autres: 7 },
-                "Occitanie": { grandes: 29, élevage: 22, maraîchage: 5, viticulture: 24, fruits: 9, autres: 11 },
-                "Auvergne-Rhône-Alpes": { grandes: 19, élevage: 47, maraîchage: 5, viticulture: 14, fruits: 7, autres: 8 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 9, élevage: 21, maraîchage: 19, viticulture: 29, fruits: 16, autres: 6 }
-            },
-            2010: {
-                "Île-de-France": { grandes: 76, élevage: 9, maraîchage: 4, viticulture: 0, fruits: 1, autres: 10 },
-                "Hauts-de-France": { grandes: 58, élevage: 16, maraîchage: 16, viticulture: 0, fruits: 2, autres: 8 },
-                "Grand Est": { grandes: 48, élevage: 16, maraîchage: 3, viticulture: 20, fruits: 5, autres: 8 },
-                "Normandie": { grandes: 28, élevage: 52, maraîchage: 7, viticulture: 0, fruits: 4, autres: 9 },
-                "Bretagne": { grandes: 14, élevage: 67, maraîchage: 7, viticulture: 0, fruits: 2, autres: 10 },
-                "Pays de la Loire": { grandes: 33, élevage: 42, maraîchage: 7, viticulture: 4, fruits: 4, autres: 10 },
-                "Centre-Val de Loire": { grandes: 58, élevage: 22, maraîchage: 3, viticulture: 10, fruits: 2, autres: 5 },
-                "Bourgogne-Franche-Comté": { grandes: 43, élevage: 32, maraîchage: 2, viticulture: 15, fruits: 2, autres: 6 },
-                "Nouvelle-Aquitaine": { grandes: 24, élevage: 32, maraîchage: 3, viticulture: 30, fruits: 5, autres: 6 },
-                "Occitanie": { grandes: 29, élevage: 21, maraîchage: 5, viticulture: 25, fruits: 10, autres: 10 },
-                "Auvergne-Rhône-Alpes": { grandes: 19, élevage: 46, maraîchage: 6, viticulture: 15, fruits: 8, autres: 6 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 9, élevage: 20, maraîchage: 20, viticulture: 30, fruits: 15, autres: 6 }
-            },
-            2020: {
-                "Île-de-France": { grandes: 79, élevage: 8, maraîchage: 4, viticulture: 0, fruits: 1, autres: 8 },
-                "Hauts-de-France": { grandes: 60, élevage: 15, maraîchage: 15, viticulture: 0, fruits: 2, autres: 8 },
-                "Grand Est": { grandes: 50, élevage: 15, maraîchage: 3, viticulture: 20, fruits: 5, autres: 7 },
-                "Normandie": { grandes: 30, élevage: 50, maraîchage: 8, viticulture: 0, fruits: 4, autres: 8 },
-                "Bretagne": { grandes: 15, élevage: 65, maraîchage: 8, viticulture: 0, fruits: 3, autres: 9 },
-                "Pays de la Loire": { grandes: 35, élevage: 40, maraîchage: 8, viticulture: 5, fruits: 4, autres: 8 },
-                "Centre-Val de Loire": { grandes: 60, élevage: 20, maraîchage: 4, viticulture: 10, fruits: 2, autres: 4 },
-                "Bourgogne-Franche-Comté": { grandes: 45, élevage: 30, maraîchage: 3, viticulture: 15, fruits: 2, autres: 5 },
-                "Nouvelle-Aquitaine": { grandes: 25, élevage: 30, maraîchage: 4, viticulture: 30, fruits: 6, autres: 5 },
-                "Occitanie": { grandes: 30, élevage: 20, maraîchage: 6, viticulture: 25, fruits: 10, autres: 9 },
-                "Auvergne-Rhône-Alpes": { grandes: 20, élevage: 45, maraîchage: 6, viticulture: 15, fruits: 8, autres: 6 },
-                "Provence-Alpes-Côte d'Azur": { grandes: 10, élevage: 20, maraîchage: 20, viticulture: 30, fruits: 15, autres: 5 }
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
+const CROP_DATA = {
+    1990: {
+        "Île-de-France":              {g:70,e:12,m:5, v:0, f:2, a:11},
+        "Hauts-de-France":            {g:52,e:20,m:18,v:0, f:2, a:8 },
+        "Grand Est":                  {g:45,e:18,m:4, v:18,f:6, a:9 },
+        "Normandie":                  {g:25,e:60,m:6, v:0, f:3, a:6 },
+        "Bretagne":                   {g:12,e:72,m:6, v:0, f:2, a:8 },
+        "Pays de la Loire":           {g:30,e:48,m:6, v:4, f:3, a:9 },
+        "Centre-Val de Loire":        {g:55,e:25,m:3, v:8, f:2, a:7 },
+        "Bourgogne-Franche-Comté":    {g:40,e:35,m:2, v:13,f:2, a:8 },
+        "Nouvelle-Aquitaine":         {g:22,e:35,m:3, v:28,f:5, a:7 },
+        "Occitanie":                  {g:28,e:25,m:5, v:23,f:9, a:10},
+        "Auvergne-Rhône-Alpes":       {g:18,e:50,m:5, v:13,f:7, a:7 },
+        "Provence-Alpes-Côte d'Azur": {g:8, e:22,m:18,v:28,f:18,a:6 },
+    },
+    2000: {
+        "Île-de-France":              {g:74,e:10,m:4, v:0, f:1, a:11},
+        "Hauts-de-France":            {g:56,e:18,m:17,v:0, f:2, a:7 },
+        "Grand Est":                  {g:47,e:17,m:3, v:19,f:5, a:9 },
+        "Normandie":                  {g:27,e:55,m:7, v:0, f:3, a:8 },
+        "Bretagne":                   {g:13,e:68,m:7, v:0, f:2, a:10},
+        "Pays de la Loire":           {g:32,e:44,m:7, v:4, f:3, a:10},
+        "Centre-Val de Loire":        {g:57,e:23,m:3, v:9, f:2, a:6 },
+        "Bourgogne-Franche-Comté":    {g:42,e:33,m:2, v:14,f:2, a:7 },
+        "Nouvelle-Aquitaine":         {g:23,e:33,m:3, v:29,f:5, a:7 },
+        "Occitanie":                  {g:29,e:22,m:5, v:24,f:9, a:11},
+        "Auvergne-Rhône-Alpes":       {g:19,e:47,m:5, v:14,f:7, a:8 },
+        "Provence-Alpes-Côte d'Azur": {g:9, e:21,m:19,v:29,f:16,a:6 },
+    },
+    2010: {
+        "Île-de-France":              {g:76,e:9, m:4, v:0, f:1, a:10},
+        "Hauts-de-France":            {g:58,e:16,m:16,v:0, f:2, a:8 },
+        "Grand Est":                  {g:48,e:16,m:3, v:20,f:5, a:8 },
+        "Normandie":                  {g:28,e:52,m:7, v:0, f:4, a:9 },
+        "Bretagne":                   {g:14,e:67,m:7, v:0, f:2, a:10},
+        "Pays de la Loire":           {g:33,e:42,m:7, v:4, f:4, a:10},
+        "Centre-Val de Loire":        {g:58,e:22,m:3, v:10,f:2, a:5 },
+        "Bourgogne-Franche-Comté":    {g:43,e:32,m:2, v:15,f:2, a:6 },
+        "Nouvelle-Aquitaine":         {g:24,e:32,m:3, v:30,f:5, a:6 },
+        "Occitanie":                  {g:29,e:21,m:5, v:25,f:10,a:10},
+        "Auvergne-Rhône-Alpes":       {g:19,e:46,m:6, v:15,f:8, a:6 },
+        "Provence-Alpes-Côte d'Azur": {g:9, e:20,m:20,v:30,f:15,a:6 },
+    },
+    2020: {
+        "Île-de-France":              {g:79,e:8, m:4, v:0, f:1, a:8 },
+        "Hauts-de-France":            {g:60,e:15,m:15,v:0, f:2, a:8 },
+        "Grand Est":                  {g:50,e:15,m:3, v:20,f:5, a:7 },
+        "Normandie":                  {g:30,e:50,m:8, v:0, f:4, a:8 },
+        "Bretagne":                   {g:15,e:65,m:8, v:0, f:3, a:9 },
+        "Pays de la Loire":           {g:35,e:40,m:8, v:5, f:4, a:8 },
+        "Centre-Val de Loire":        {g:60,e:20,m:4, v:10,f:2, a:4 },
+        "Bourgogne-Franche-Comté":    {g:45,e:30,m:3, v:15,f:2, a:5 },
+        "Nouvelle-Aquitaine":         {g:25,e:30,m:4, v:30,f:6, a:5 },
+        "Occitanie":                  {g:30,e:20,m:6, v:25,f:10,a:9 },
+        "Auvergne-Rhône-Alpes":       {g:20,e:45,m:6, v:15,f:8, a:6 },
+        "Provence-Alpes-Côte d'Azur": {g:10,e:20,m:20,v:30,f:15,a:5 },
+    },
+};
+
+const ENV_DATA = {
+    1990: {
+        "Île-de-France":              {water:900,  ges:2.8 },
+        "Hauts-de-France":            {water:1100, ges:4.5 },
+        "Grand Est":                  {water:1300, ges:5.1 },
+        "Normandie":                  {water:700,  ges:7.2 },
+        "Bretagne":                   {water:600,  ges:10.5},
+        "Pays de la Loire":           {water:1000, ges:8.5 },
+        "Centre-Val de Loire":        {water:1200, ges:4.2 },
+        "Bourgogne-Franche-Comté":    {water:1100, ges:5.8 },
+        "Nouvelle-Aquitaine":         {water:1700, ges:8.8 },
+        "Occitanie":                  {water:1900, ges:6.8 },
+        "Auvergne-Rhône-Alpes":       {water:1500, ges:7.8 },
+        "Provence-Alpes-Côte d'Azur": {water:2100, ges:3.5 },
+    },
+    2000: {
+        "Île-de-France":              {water:1050, ges:2.5 },
+        "Hauts-de-France":            {water:1250, ges:4.2 },
+        "Grand Est":                  {water:1450, ges:4.7 },
+        "Normandie":                  {water:800,  ges:6.7 },
+        "Bretagne":                   {water:700,  ges:9.8 },
+        "Pays de la Loire":           {water:1150, ges:7.8 },
+        "Centre-Val de Loire":        {water:1350, ges:3.7 },
+        "Bourgogne-Franche-Comté":    {water:1250, ges:5.2 },
+        "Nouvelle-Aquitaine":         {water:1950, ges:8.2 },
+        "Occitanie":                  {water:2150, ges:6.2 },
+        "Auvergne-Rhône-Alpes":       {water:1650, ges:7.2 },
+        "Provence-Alpes-Côte d'Azur": {water:2350, ges:3.2 },
+    },
+    2010: {
+        "Île-de-France":              {water:1150, ges:2.3 },
+        "Hauts-de-France":            {water:1350, ges:4.0 },
+        "Grand Est":                  {water:1550, ges:4.4 },
+        "Normandie":                  {water:870,  ges:6.2 },
+        "Bretagne":                   {water:770,  ges:9.0 },
+        "Pays de la Loire":           {water:1250, ges:7.3 },
+        "Centre-Val de Loire":        {water:1450, ges:3.4 },
+        "Bourgogne-Franche-Comté":    {water:1350, ges:4.8 },
+        "Nouvelle-Aquitaine":         {water:2100, ges:7.6 },
+        "Occitanie":                  {water:2300, ges:5.8 },
+        "Auvergne-Rhône-Alpes":       {water:1750, ges:6.7 },
+        "Provence-Alpes-Côte d'Azur": {water:2500, ges:3.0 },
+    },
+    2020: {
+        "Île-de-France":              {water:1200, ges:2.1 },
+        "Hauts-de-France":            {water:1400, ges:3.8 },
+        "Grand Est":                  {water:1600, ges:4.2 },
+        "Normandie":                  {water:900,  ges:5.8 },
+        "Bretagne":                   {water:800,  ges:8.5 },
+        "Pays de la Loire":           {water:1300, ges:6.9 },
+        "Centre-Val de Loire":        {water:1500, ges:3.2 },
+        "Bourgogne-Franche-Comté":    {water:1400, ges:4.5 },
+        "Nouvelle-Aquitaine":         {water:2200, ges:7.1 },
+        "Occitanie":                  {water:2400, ges:5.4 },
+        "Auvergne-Rhône-Alpes":       {water:1800, ges:6.3 },
+        "Provence-Alpes-Côte d'Azur": {water:2600, ges:2.8 },
+    },
+};
+
+/* colors chosen to feel like actual land */
+const COLORS = {
+    g: '#C9AA6B', // wheat / céréales
+    e: '#7A8C6E', // pasture / élevage
+    m: '#5C7A52', // dark leaf / maraîchage
+    v: '#826B9E', // grape / viticulture
+    f: '#B56B52', // fruit skin / fruits
+    a: '#9E9690', // neutral / autres
+};
+
+const LABELS = { g:'Grandes cultures', e:'Élevage', m:'Maraîchage', v:'Viticulture', f:'Fruits', a:'Autres' };
+const EMOJIS = { g:'🌾', e:'🐄', m:'🥬', v:'🍇', f:'🍎', a:'—' };
+const ANIM   = { g:'e-sway', e:'e-bob', m:'e-bob', v:'e-tilt', f:'e-bob', a:'' };
+
+const PREV = {2000:1990, 2010:2000, 2020:2010};
+
+/* ─────────────────────────────────────────
+   COMPUTE BULLETIN TEXT
+───────────────────────────────────────── */
+function makeBulletin(year, region) {
+    const prev = PREV[year];
+    if (!prev) return null;
+
+    const scope = region ? [region] : Object.keys(CROP_DATA[year]).slice(0, 8);
+
+    // biggest crop shift
+    let maxD = 0, bigKey = '', bigReg = '';
+    const keyMap = { g:'grandes cultures', e:"l'élevage", m:'le maraîchage', v:'la viticulture', f:'les fruits' };
+    scope.forEach(r => {
+        const c = CROP_DATA[year]?.[r], p = CROP_DATA[prev]?.[r];
+        if (!c || !p) return;
+        ['g','e','m','v','f'].forEach(k => {
+            const d = (c[k]||0) - (p[k]||0);
+            if (Math.abs(d) > Math.abs(maxD)) { maxD = d; bigKey = k; bigReg = r; }
+        });
+    });
+
+    // water & GES
+    const wDs=[], gDs=[];
+    scope.forEach(r => {
+        const c = ENV_DATA[year]?.[r], p = ENV_DATA[prev]?.[r];
+        if (c && p) { wDs.push(c.water - p.water); gDs.push(c.ges - p.ges); }
+    });
+    const avgW = wDs.length ? Math.round(wDs.reduce((a,b)=>a+b)/wDs.length) : null;
+    const avgG = gDs.length ? +(gDs.reduce((a,b)=>a+b)/gDs.length).toFixed(1) : null;
+
+    const where = region ? `en ${region}` : 'sur le territoire national';
+
+    const cropLine = bigKey ? (maxD > 0
+        ? `${keyMap[bigKey]} progresse de ${maxD.toFixed(1)} points ${where} — la spécialisation territoriale s'accentue.`
+        : `${keyMap[bigKey]} recule de ${Math.abs(maxD).toFixed(1)} points ${where}, signe d'une recomposition des filières.`
+    ) : null;
+
+    const waterLine = avgW !== null ? (avgW > 0
+        ? `La consommation d'eau augmente de ${avgW} m³/ha — les sécheresses répétées et l'extension des cultures irriguées pèsent sur les ressources.`
+        : `La consommation d'eau recule de ${Math.abs(avgW)} m³/ha, reflet de la modernisation des systèmes d'irrigation.`
+    ) : null;
+
+    const gesLine = avgG !== null ? (avgG < 0
+        ? `Les émissions de GES diminuent de ${Math.abs(avgG)} Mt CO₂eq — les efforts sur la gestion des élevages et la fertilisation raisonnée portent leurs fruits.`
+        : `Les émissions de GES augmentent de ${avgG} Mt CO₂eq, malgré les progrès techniques de la filière.`
+    ) : null;
+
+    return { year, prev, cropLine, waterLine, gesLine };
+}
+
+/* ─────────────────────────────────────────
+   APP
+───────────────────────────────────────── */
+function App() {
+    const [geo, setGeo]                   = useState(null);
+    const [region, setRegion]             = useState(null);
+    const [year, setYear]                 = useState(2020);
+    const [ind, setInd]                   = useState('cultures');
+    const [playing, setPlaying]           = useState(false);
+    const [mapSize, setMapSize]           = useState({w:0,h:0});
+    const [bulletin, setBulletin]         = useState(null);
+    const [showBulletin, setShowBulletin] = useState(false);
+
+    const mapEl     = useRef(null);
+    const radarEl   = useRef(null);
+    const evoEl     = useRef(null);
+    const prevYrRef = useRef(null);
+    const timerRef  = useRef(null);
+
+    // load geo
+    useEffect(() => {
+        fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/regions-version-simplifiee.geojson')
+            .then(r => r.json()).then(setGeo)
+            .catch(() => setGeo({type:'FeatureCollection',features:[]}));
+    }, []);
+
+    // resize observer
+    useEffect(() => {
+        if (!mapEl.current) return;
+        const el = mapEl.current;
+        const sync = () => setMapSize({w: el.clientWidth, h: el.clientHeight});
+        sync();
+        const obs = new ResizeObserver(sync);
+        obs.observe(el);
+        return () => obs.disconnect();
+    }, []);
+
+    // play
+    useEffect(() => {
+        if (!playing) return;
+        const yrs = [1990,2000,2010,2020];
+        const t = setTimeout(() => setYear(yrs[(yrs.indexOf(year)+1)%yrs.length]), 2000);
+        return () => clearTimeout(t);
+    }, [playing, year]);
+
+    // bulletin on year change
+    useEffect(() => {
+        if (prevYrRef.current !== null && prevYrRef.current !== year) {
+            const b = makeBulletin(year, region);
+            if (b) {
+                clearTimeout(timerRef.current);
+                setBulletin(b);
+                setShowBulletin(true);
+                timerRef.current = setTimeout(() => setShowBulletin(false), 7000);
             }
-        };
+        }
+        prevYrRef.current = year;
+    }, [year, region]);
 
-        // Historical data
-        const historicalData = {
-            1990: {
-                "Île-de-France": { water: 2100, emissions: 12.5 },
-                "Hauts-de-France": { water: 1800, emissions: 11.2 },
-                "Nouvelle-Aquitaine": { water: 1700, emissions: 14.8 },
-                "Occitanie": { water: 1900, emissions: 13.5 },
-                "Bretagne": { water: 1500, emissions: 10.5 },
-                "Normandie": { water: 1400, emissions: 7.2 }
-            },
-            2000: {
-                "Île-de-France": { water: 2350, emissions: 11.8 },
-                "Hauts-de-France": { water: 2000, emissions: 10.5 },
-                "Nouvelle-Aquitaine": { water: 1950, emissions: 13.6 },
-                "Occitanie": { water: 2150, emissions: 12.4 },
-                "Bretagne": { water: 1400, emissions: 9.5 },
-                "Normandie": { water: 1300, emissions: 6.5 }
-            },
-            2010: {
-                "Île-de-France": { water: 2475, emissions: 11.2 },
-                "Hauts-de-France": { water: 2100, emissions: 10.1 },
-                "Nouvelle-Aquitaine": { water: 2075, emissions: 13.0 },
-                "Occitanie": { water: 2275, emissions: 11.8 },
-                "Bretagne": { water: 1350, emissions: 9.0 },
-                "Normandie": { water: 1250, emissions: 6.2 }
-            },
-            2020: {
-                "Île-de-France": { water: 2600, emissions: 11.0 },
-                "Hauts-de-France": { water: 2200, emissions: 9.8 },
-                "Nouvelle-Aquitaine": { water: 2200, emissions: 12.5 },
-                "Occitanie": { water: 2400, emissions: 11.2 },
-                "Bretagne": { water: 1300, emissions: 8.5 },
-                "Normandie": { water: 1200, emissions: 5.8 }
+    const dominant = d => {
+        const entries = Object.entries(d).filter(([k]) => k.length===1);
+        return entries.reduce((a,b) => a[1]>b[1]?a:b)[0];
+    };
+
+    /* DRAW MAP */
+    useEffect(() => {
+        if (!mapEl.current || !geo) return;
+        const W = mapSize.w || mapEl.current.clientWidth;
+        const H = mapSize.h || mapEl.current.clientHeight;
+        if (W < 10 || H < 10) return;
+
+        d3.select(mapEl.current).selectAll('*').remove();
+
+        const svg = d3.select(mapEl.current)
+            .append('svg').attr('width',W).attr('height',H)
+            .attr('xmlns:xhtml','http://www.w3.org/1999/xhtml');
+
+        const proj = region
+            ? (() => {
+                const feat = geo.features.find(f => (f.properties.nom||f.properties.name) === region);
+                return feat
+                    ? d3.geoMercator().fitExtent([[48,48],[W-48,H-48]], feat)
+                    : d3.geoMercator().fitExtent([[16,16],[W-16,H-16]], geo);
+              })()
+            : d3.geoMercator().fitExtent([[16,16],[W-16,H-16]], geo);
+
+        const path = d3.geoPath().projection(proj);
+        const waterScale = d3.scaleSequential(d3.interpolate('#dce8f5','#1a4a82')).domain([600,2600]);
+        const gesScale   = d3.scaleSequential(d3.interpolate('#f5e8dc','#7a1a10')).domain([2,11]);
+
+        const features = region
+            ? geo.features.filter(f => (f.properties.nom||f.properties.name) === region)
+            : geo.features;
+
+        features.forEach(feat => {
+            const name = feat.properties.nom || feat.properties.name;
+            const cd   = CROP_DATA[year]?.[name];
+            const ed   = ENV_DATA[year]?.[name];
+
+            let fill = '#D6CFCA';
+            if (cd) {
+                if (ind === 'cultures')   fill = COLORS[dominant(cd)];
+                else if (ind === 'eau' && ed)  fill = waterScale(ed.water);
+                else if (ind === 'ges'  && ed) fill = gesScale(ed.ges);
             }
-        };
 
-        const colors = {
-            grandes: '#D4A574',      // Beige doré (céréales)
-            élevage: '#8B6F47',      // Brun terre (bétail)
-            maraîchage: '#6B8E4E',   // Vert olive (légumes)
-            viticulture: '#7D5BA6',  // Pourpre profond (vin)
-            fruits: '#C17767',       // Terracotta (fruits)
-            autres: '#9CA3AF'        // Gris neutre
-        };
+            const p = svg.append('path').datum(feat)
+                .attr('d', path)
+                .attr('fill', fill)
+                .attr('stroke', '#F4F1EC')
+                .attr('stroke-width', region ? 1.5 : 0.75)
+                .attr('class','region-path')
+                .on('click', () => setRegion(name === region ? null : (region ? null : name)));
 
-        const emojis = {
-            grandes: '🌾',
-            élevage: '🐄',
-            maraîchage: '🥬',
-            viticulture: '🍷',
-            fruits: '🍎',
-            autres: '📦'
-        };
+            p.append('title').text(name === region ? 'Cliquer pour revenir' : name);
 
-        function AgriScopeFR() {
-            const [franceGeoJSON, setFranceGeoJSON] = useState(null);
-            const [selectedRegion, setSelectedRegion] = useState(null);
-            const [selectedYear, setSelectedYear] = useState(2020);
-            const [indicator, setIndicator] = useState('dominant');
-            const [isPlaying, setIsPlaying] = useState(false);
-            const mapRef = useRef(null);
-            const radarRef = useRef(null);
-            const evolutionRef = useRef(null);
+            const [cx,cy] = path.centroid(feat);
+            if (isNaN(cx)||isNaN(cy)) return;
 
-            // Load real France GeoJSON data
-            useEffect(() => {
-                // Using publicly available French regions GeoJSON
-                fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/regions-version-simplifiee.geojson')
-                    .then(response => response.json())
-                    .then(data => {
-                        setFranceGeoJSON(data);
-                    })
-                    .catch(error => {
-                        console.error('Error loading GeoJSON:', error);
-                        // Fallback: use simplified version if fetch fails
-                        setFranceGeoJSON({
-                            "type": "FeatureCollection",
-                            "features": []
-                        });
-                    });
-            }, []);
+            /* region label */
+            if (!region || region === name) {
+                svg.append('text')
+                    .attr('x',cx).attr('y', cy - (region ? 38 : 10))
+                    .attr('text-anchor','middle')
+                    .attr('font-size', region ? '18px' : '9.5px')
+                    .attr('font-family', "'IBM Plex Sans', sans-serif")
+                    .attr('font-weight', region ? '500' : '400')
+                    .attr('fill', region ? '#1C1917' : '#3C3530')
+                    .style('pointer-events','none')
+                    .text(name);
 
-            // Play mode - auto-advance years
-            useEffect(() => {
-                if (!isPlaying) return;
-                
-                const years = [1990, 2000, 2010, 2020];
-                const currentIndex = years.indexOf(selectedYear);
-                
-                const timer = setTimeout(() => {
-                    const nextIndex = (currentIndex + 1) % years.length;
-                    setSelectedYear(years[nextIndex]);
-                }, 2000); // Change year every 2 seconds
-                
-                return () => clearTimeout(timer);
-            }, [isPlaying, selectedYear]);
+                /* emoji indicators on dominant view */
+                if (cd && ind === 'cultures') {
+                    const top = ['g','e','m','v','f']
+                        .map(k => ({k, v: cd[k]}))
+                        .filter(x => x.v >= (region ? 10 : 18))
+                        .sort((a,b) => b.v - a.v)
+                        .slice(0, region ? 4 : 2);
 
-            const getDominant = (data) => {
-                const types = Object.entries(data).filter(([key]) => 
-                    key !== 'water' && key !== 'emissions' && key !== 'dominant'
-                );
-                return types.reduce((a, b) => a[1] > b[1] ? a : b)[0];
-            };
+                    top.forEach(({k,v}, i) => {
+                        const oy  = region ? 8 + i*36 : 4 + i*16;
+                        const fs  = region ? '24px' : '13px';
+                        const cls = ANIM[k];
+                        const delay = (Math.random()*2).toFixed(2);
 
-            // Draw France map
-            useEffect(() => {
-                if (!mapRef.current || !franceGeoJSON) return;
+                        const fo = svg.append('foreignObject')
+                            .attr('x',cx-18).attr('y',cy+oy-16)
+                            .attr('width',36).attr('height',36)
+                            .style('pointer-events','none').style('overflow','visible');
+                        fo.append('xhtml:div')
+                            .attr('class', cls)
+                            .style('font-size',fs).style('text-align','center')
+                            .style('line-height','1').style('animation-delay',`${delay}s`)
+                            .html(EMOJIS[k]);
 
-                const container = mapRef.current.parentElement;
-                const width = container.clientWidth;
-                const height = container.clientHeight;
-                
-                d3.select(mapRef.current).selectAll("*").remove();
-                
-                const svg = d3.select(mapRef.current)
-                    .append("svg")
-                    .attr("width", width)
-                    .attr("height", height)
-                    .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml");
-
-                // If a region is selected, zoom into it
-                let projection, bounds, selectedFeature;
-                
-                if (selectedRegion) {
-                    // Find the selected region feature
-                    selectedFeature = franceGeoJSON.features.find(f => 
-                        (f.properties.nom || f.properties.name) === selectedRegion
-                    );
-                    
-                    if (selectedFeature) {
-                        // Create a temporary projection to get bounds
-                        const tempProjection = d3.geoMercator().fitSize([width, height], selectedFeature);
-                        projection = tempProjection;
-                    } else {
-                        projection = d3.geoMercator()
-                            .center([2.5, 46.5])
-                            .scale(2800)
-                            .translate([width / 2, height / 2]);
-                    }
-                } else {
-                    // Show all of France
-                    projection = d3.geoMercator()
-                        .center([2.5, 46.5])
-                        .scale(2800)
-                        .translate([width / 2, height / 2]);
-                }
-
-                const path = d3.geoPath().projection(projection);
-
-                const waterScale = d3.scaleSequential(d3.interpolateBlues)
-                    .domain([1000, 2600]);
-                
-                const emissionsScale = d3.scaleSequential(d3.interpolateReds)
-                    .domain([5, 15]);
-
-                const g = svg.append("g");
-
-                // Filter features based on selection
-                const featuresToShow = selectedRegion 
-                    ? franceGeoJSON.features.filter(f => 
-                        (f.properties.nom || f.properties.name) === selectedRegion
-                      )
-                    : franceGeoJSON.features;
-
-                featuresToShow.forEach(feature => {
-                    const regionName = feature.properties.nom || feature.properties.name;
-                    const data = regionsDataByYear[selectedYear]?.[regionName];
-                    const yearData = historicalData[selectedYear]?.[regionName];
-                    
-                    let fillColor = colors.autres;
-                    
-                    if (data) {
-                        if (indicator === 'dominant') {
-                            const dominant = getDominant(data);
-                            fillColor = colors[dominant];
-                        } else if (indicator === 'water' && yearData) {
-                            fillColor = waterScale(yearData.water);
-                        } else if (indicator === 'emissions' && yearData) {
-                            fillColor = emissionsScale(yearData.emissions);
+                        if (region) {
+                            svg.append('text')
+                                .attr('x',cx+32).attr('y',cy+oy+7)
+                                .attr('font-size','12px').attr('fill','#3C3530')
+                                .attr('font-family',"'IBM Plex Mono',monospace").attr('font-weight','500')
+                                .style('pointer-events','none').text(`${v}%`);
                         }
-                    }
-
-                    const pathElement = g.append("path")
-                        .datum(feature)
-                        .attr("d", path)
-                        .attr("fill", fillColor)
-                        .attr("stroke", "#000")
-                        .attr("stroke-width", selectedRegion ? 3 : 1.5)
-                        .attr("class", "region-path")
-                        .style("cursor", "pointer")
-                        .on("click", function() {
-                            if (selectedRegion === regionName) {
-                                // Click on selected region = zoom out
-                                setSelectedRegion(null);
-                            } else if (!selectedRegion) {
-                                // Click on a region when viewing all = zoom in
-                                setSelectedRegion(regionName);
-                            }
-                        });
-                    
-                    // Add tooltip
-                    pathElement.append("title")
-                        .text(selectedRegion === regionName 
-                            ? "Cliquez pour revenir à la carte complète" 
-                            : `Cliquez pour zoomer sur ${regionName}`);
-
-                    // Add region label - larger if zoomed
-                    if (!selectedRegion || selectedRegion === regionName) {
-                        const centroid = path.centroid(feature);
-                        
-                        // Add region name
-                        g.append("text")
-                            .attr("x", centroid[0])
-                            .attr("y", centroid[1] - (selectedRegion ? 30 : 10))
-                            .attr("text-anchor", "middle")
-                            .attr("font-size", selectedRegion ? "24px" : "11px")
-                            .attr("font-weight", "700")
-                            .attr("fill", "#333")
-                            .style("pointer-events", "none")
-                            .text(regionName);
-                        
-                        // Add emojis for crop distribution (only when showing dominant indicator)
-                        if (data && indicator === 'dominant') {
-                            const types = ['grandes', 'élevage', 'maraîchage', 'viticulture', 'fruits', 'autres'];
-                            const significantCrops = types
-                                .map(type => ({ type, value: data[type] }))
-                                .filter(crop => crop.value >= 15)
-                                .sort((a, b) => b.value - a.value)
-                                .slice(0, 3); // Show max 3 emojis
-                            
-                            // Animation classes for different crop types
-                            const animationClasses = {
-                                'grandes': 'emoji-slow-wander',  // Céréales se balancent doucement
-                                'élevage': 'emoji-wander',        // Vaches se baladent
-                                'maraîchage': 'emoji-float',      // Légumes flottent
-                                'viticulture': 'emoji-wiggle',    // Vignes se balancent
-                                'fruits': 'emoji-float',          // Fruits flottent
-                                'autres': 'emoji-slow-wander'     // Autres bougent doucement
-                            };
-                            
-                            // Position emojis around the region name
-                            significantCrops.forEach((crop, index) => {
-                                const offsetY = selectedRegion ? 10 + (index * 30) : 5 + (index * 15);
-                                const fontSize = selectedRegion ? "32px" : "16px";
-                                const animationClass = animationClasses[crop.type];
-                                
-                                // Random delay for more natural movement
-                                const randomDelay = Math.random() * 3;
-                                
-                                // Create a foreignObject to embed HTML with CSS classes
-                                const fo = g.append("foreignObject")
-                                    .attr("x", centroid[0] - 20)
-                                    .attr("y", centroid[1] + offsetY - 20)
-                                    .attr("width", 40)
-                                    .attr("height", 40)
-                                    .style("pointer-events", "none")
-                                    .style("overflow", "visible");
-                                
-                                fo.append("xhtml:div")
-                                    .attr("class", animationClass)
-                                    .style("font-size", fontSize)
-                                    .style("text-align", "center")
-                                    .style("line-height", "1")
-                                    .style("animation-delay", `${randomDelay}s`)
-                                    .html(emojis[crop.type]);
-                                
-                                // Add percentage next to emoji when zoomed
-                                if (selectedRegion) {
-                                    g.append("text")
-                                        .attr("x", centroid[0] + 40)
-                                        .attr("y", centroid[1] + offsetY + 5)
-                                        .attr("text-anchor", "start")
-                                        .attr("font-size", "14px")
-                                        .attr("font-weight", "600")
-                                        .attr("fill", "#333")
-                                        .style("pointer-events", "none")
-                                        .text(`${crop.value}%`);
-                                }
-                            });
-                        }
-                    }
-                });
-
-            }, [selectedRegion, selectedYear, indicator, franceGeoJSON]);
-
-            // Draw radar chart
-            useEffect(() => {
-                if (!radarRef.current) return;
-
-                const width = 350;
-                const height = 350;
-                const margin = 50;
-                const radius = Math.min(width, height) / 2 - margin;
-
-                d3.select(radarRef.current).selectAll("*").remove();
-
-                const svg = d3.select(radarRef.current)
-                    .append("svg")
-                    .attr("width", width)
-                    .attr("height", height);
-
-                const g = svg.append("g")
-                    .attr("transform", `translate(${width/2}, ${height/2})`);
-
-                const axes = ['grandes', 'élevage', 'maraîchage', 'viticulture', 'fruits', 'autres'];
-                const angleSlice = Math.PI * 2 / axes.length;
-
-                // Grid
-                const levels = 5;
-                for (let i = 1; i <= levels; i++) {
-                    g.append("circle")
-                        .attr("r", radius * i / levels)
-                        .attr("fill", "none")
-                        .attr("stroke", "#CDCDCD")
-                        .attr("stroke-width", 1);
+                    });
                 }
+            }
+        });
 
-                // Axes
-                axes.forEach((axis, i) => {
-                    const angle = i * angleSlice - Math.PI / 2;
-                    const x = radius * Math.cos(angle);
-                    const y = radius * Math.sin(angle);
+    }, [region, year, ind, geo, mapSize]);
 
-                    g.append("line")
-                        .attr("x1", 0)
-                        .attr("y1", 0)
-                        .attr("x2", x)
-                        .attr("y2", y)
-                        .attr("stroke", "#999")
-                        .attr("stroke-width", 1);
+    /* DRAW RADAR */
+    useEffect(() => {
+        if (!radarEl.current) return;
+        const W=280, H=260, PAD=46, R=Math.min(W,H)/2-PAD;
+        d3.select(radarEl.current).selectAll('*').remove();
 
-                    g.append("text")
-                        .attr("x", x * 1.2)
-                        .attr("y", y * 1.2)
-                        .attr("text-anchor", "middle")
-                        .attr("font-size", "10px")
-                        .text(axis);
+        const svg = d3.select(radarEl.current)
+            .append('svg').attr('width','100%').attr('viewBox',`0 0 ${W} ${H}`).attr('height','auto');
+        const g   = svg.append('g').attr('transform',`translate(${W/2},${H/2})`);
+        const keys = ['g','e','m','v','f','a'];
+        const slc = Math.PI*2/keys.length;
+
+        // rings
+        [1,2,3,4].forEach(i => {
+            g.append('circle').attr('r',R*i/4).attr('fill','none')
+             .attr('stroke','#E2DDD8').attr('stroke-width', i===4 ? 1 : 0.5);
+        });
+
+        // axes + labels
+        keys.forEach((k,i) => {
+            const a = i*slc - Math.PI/2;
+            const x = R*Math.cos(a), y = R*Math.sin(a);
+            g.append('line').attr('x1',0).attr('y1',0).attr('x2',x).attr('y2',y)
+             .attr('stroke','#E2DDD8').attr('stroke-width',0.75);
+            const lx=(R+18)*Math.cos(a), ly=(R+18)*Math.sin(a);
+            g.append('text').attr('x',lx).attr('y',ly)
+             .attr('text-anchor','middle').attr('dominant-baseline','middle')
+             .attr('font-size','8px').attr('fill','#9E9690')
+             .attr('font-family',"'IBM Plex Sans',sans-serif")
+             .text(LABELS[k]);
+        });
+
+        const lineGen = d3.line().x(d=>d.x).y(d=>d.y).curve(d3.curveLinearClosed);
+        const regions = region ? [region] : Object.keys(CROP_DATA[year]).slice(0,4);
+
+        regions.forEach(reg => {
+            const cd = CROP_DATA[year][reg];
+            if (!cd) return;
+            const dom = dominant(cd);
+            const col = COLORS[dom];
+            const pts = keys.map((k,i) => {
+                const a = i*slc - Math.PI/2, r = (cd[k]/100)*R;
+                return {x: r*Math.cos(a), y: r*Math.sin(a)};
+            });
+            g.append('path').datum(pts).attr('d',lineGen)
+             .attr('fill',col).attr('fill-opacity', region ? 0.18 : 0.1)
+             .attr('stroke',col).attr('stroke-width', region ? 2 : 1.2).attr('stroke-opacity',0.9);
+            pts.forEach(pt => {
+                g.append('circle').attr('cx',pt.x).attr('cy',pt.y).attr('r',2.5)
+                 .attr('fill',col).attr('stroke','#FAFAF8').attr('stroke-width',1);
+            });
+        });
+
+    }, [region, year]);
+
+    /* DRAW EVOLUTION */
+    useEffect(() => {
+        if (!evoEl.current || !region) return;
+        const W=290, H=170, m={top:12,right:64,bottom:32,left:36};
+        d3.select(evoEl.current).selectAll('*').remove();
+
+        const svg = d3.select(evoEl.current)
+            .append('svg').attr('width','100%').attr('viewBox',`0 0 ${W} ${H}`).attr('height','auto');
+
+        const years=[1990,2000,2010,2020];
+        const keys =['g','e','v','m'];
+        const x = d3.scaleLinear().domain([1990,2020]).range([m.left,W-m.right]);
+        const y = d3.scaleLinear().domain([0,80]).range([H-m.bottom,m.top]);
+        const lineGen = d3.line().x(d=>x(d.yr)).y(d=>y(d.val)).curve(d3.curveMonotoneX);
+
+        // grid
+        [20,40,60,80].forEach(v => {
+            svg.append('line').attr('x1',m.left).attr('x2',W-m.right)
+               .attr('y1',y(v)).attr('y2',y(v))
+               .attr('stroke','#E2DDD8').attr('stroke-width',0.5);
+        });
+
+        svg.append('g').attr('transform',`translate(0,${H-m.bottom})`)
+           .call(d3.axisBottom(x).tickFormat(d3.format('d')).ticks(4).tickSize(0))
+           .call(g => g.select('.domain').attr('stroke','#E2DDD8'))
+           .call(g => g.selectAll('text').attr('font-family',"'IBM Plex Mono',monospace")
+               .attr('font-size','8px').attr('fill','#9E9690').attr('dy','10'));
+
+        svg.append('g').attr('transform',`translate(${m.left},0)`)
+           .call(d3.axisLeft(y).ticks(4).tickSize(0))
+           .call(g => g.select('.domain').remove())
+           .call(g => g.selectAll('text').attr('font-family',"'IBM Plex Mono',monospace")
+               .attr('font-size','8px').attr('fill','#9E9690').attr('dx','-4'));
+
+        keys.forEach(k => {
+            const vals = years.map(yr => ({yr, val: CROP_DATA[yr]?.[region]?.[k]||0}));
+            svg.append('path').datum(vals).attr('fill','none')
+               .attr('stroke',COLORS[k]).attr('stroke-width',1.8).attr('d',lineGen);
+            vals.forEach(d => {
+                svg.append('circle').attr('cx',x(d.yr)).attr('cy',y(d.val)).attr('r',3)
+                   .attr('fill',COLORS[k]).attr('stroke','#FAFAF8').attr('stroke-width',1.2);
+            });
+            const last = vals[vals.length-1];
+            svg.append('text').attr('x',W-m.right+5).attr('y',y(last.val)+3.5)
+               .attr('font-size','8px').attr('fill',COLORS[k])
+               .attr('font-family',"'IBM Plex Sans',sans-serif").text(LABELS[k]);
+        });
+
+        // year marker
+        svg.append('line')
+           .attr('x1',x(year)).attr('x2',x(year))
+           .attr('y1',m.top).attr('y2',H-m.bottom)
+           .attr('stroke','#1C1917').attr('stroke-width',1).attr('stroke-dasharray','3,2')
+           .attr('stroke-opacity',0.4);
+
+    }, [region, year]);
+
+    const regionCrops = region ? CROP_DATA[year]?.[region] : null;
+    const regionEnv   = region ? ENV_DATA[year]?.[region]  : null;
+
+    /* exports */
+    const exportPNG = async () => {
+        try {
+            const canvas = await html2canvas(mapEl.current, {backgroundColor:'#F4F1EC',scale:2});
+            Object.assign(document.createElement('a'), {download:`agriscopefr-${year}.png`, href:canvas.toDataURL()}).click();
+        } catch(e) { alert('Erreur export PNG'); }
+    };
+    const exportPDF = async () => {
+        try {
+            const {jsPDF} = window.jspdf;
+            const pdf = new jsPDF('p','mm','a4');
+            pdf.setFontSize(18); pdf.setTextColor(28,25,23);
+            pdf.text('AgriScopeFR', 20, 20);
+            pdf.setFontSize(10); pdf.setTextColor(87,83,78);
+            pdf.text(`Agriculture en France · ${year}`, 20, 27);
+            const canvas = await html2canvas(mapEl.current, {backgroundColor:'#F4F1EC',scale:1.5});
+            pdf.addImage(canvas.toDataURL('image/png'),'PNG',20,34,170,120);
+            if (region && regionCrops) {
+                pdf.setFontSize(12); pdf.setTextColor(28,25,23);
+                pdf.text(region, 20, 164);
+                pdf.setFontSize(9); pdf.setTextColor(87,83,78);
+                let yp = 172;
+                Object.entries(regionCrops).forEach(([k,v]) => {
+                    pdf.text(`${LABELS[k]} : ${v}%`, 26, yp); yp += 6;
                 });
+            }
+            pdf.setFontSize(7); pdf.setTextColor(168,162,158);
+            pdf.text('AgriScopeFR · Recensements Agricoles 1990–2020', 20, 287);
+            pdf.save(`agriscopefr-${year}.pdf`);
+        } catch(e) { alert('Erreur export PDF'); }
+    };
 
-                const regionsToPlot = selectedRegion ? [selectedRegion] : Object.keys(regionsDataByYear[selectedYear]).slice(0, 5);
-                
-                regionsToPlot.forEach((region) => {
-                    const data = regionsDataByYear[selectedYear][region];
-                    const radarData = axes.map((axis, i) => {
-                        const angle = i * angleSlice - Math.PI / 2;
-                        const value = data[axis] || 0;
-                        const r = (value / 100) * radius;
-                        return {
-                            x: r * Math.cos(angle),
-                            y: r * Math.sin(angle)
-                        };
-                    });
+    /* ═══ RENDER ═══ */
+    return (
+        <div style={{height:'100vh', display:'flex', flexDirection:'column', background:'var(--bg)', overflow:'hidden'}}>
 
-                    const line = d3.line()
-                        .x(d => d.x)
-                        .y(d => d.y)
-                        .curve(d3.curveLinearClosed);
+            {/* ── HEADER ── */}
+            <header style={{
+                background: 'var(--surface)',
+                borderBottom: '1px solid var(--rule)',
+                padding: '0 20px',
+                height: 52,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexShrink: 0,
+                gap: 16,
+            }}>
+                {/* title */}
+                <div style={{display:'flex', alignItems:'baseline', gap:12}}>
+                    <span style={{
+                        fontFamily:'var(--serif)', fontWeight:600,
+                        fontSize:'1.1rem', color:'var(--ink)', letterSpacing:'-0.01em',
+                    }}>AgriScopeFR</span>
+                    <span style={{
+                        fontFamily:'var(--sans)', fontWeight:300,
+                        fontSize:'11px', color:'var(--ink-3)',
+                        borderLeft:'1px solid var(--rule)', paddingLeft:12,
+                    }}>Agriculture en France · 1990–2020</span>
+                </div>
 
-                    g.append("path")
-                        .datum(radarData)
-                        .attr("d", line)
-                        .attr("fill", colors[getDominant(data)])
-                        .attr("fill-opacity", 0.3)
-                        .attr("stroke", colors[getDominant(data)])
-                        .attr("stroke-width", 2);
+                {/* controls */}
+                <div style={{display:'flex', alignItems:'center', gap:14}}>
+                    {/* indicator tabs */}
+                    <div style={{display:'flex', gap:3}}>
+                        {[
+                            {v:'cultures', l:'Cultures'},
+                            {v:'eau',      l:'Eau'},
+                            {v:'ges',      l:'Émissions'},
+                        ].map(({v,l}) => (
+                            <button key={v} className={`ind-tab${ind===v?' on':''}`} onClick={()=>setInd(v)}>{l}</button>
+                        ))}
+                    </div>
 
-                    radarData.forEach(point => {
-                        g.append("circle")
-                            .attr("cx", point.x)
-                            .attr("cy", point.y)
-                            .attr("r", 3)
-                            .attr("fill", colors[getDominant(data)]);
-                    });
-                });
+                    {/* divider */}
+                    <div style={{width:1, height:20, background:'var(--rule)'}} />
 
-            }, [selectedRegion, selectedYear]);
-
-            // Draw evolution chart (line chart showing 1990-2020 progression)
-            useEffect(() => {
-                if (!evolutionRef.current || !selectedRegion) return;
-
-                const width = 350;
-                const height = 200;
-                const margin = { top: 20, right: 80, bottom: 40, left: 50 };
-
-                d3.select(evolutionRef.current).selectAll("*").remove();
-
-                const svg = d3.select(evolutionRef.current)
-                    .append("svg")
-                    .attr("width", width)
-                    .attr("height", height);
-
-                const years = [1990, 2000, 2010, 2020];
-                const types = ['grandes', 'élevage', 'viticulture', 'maraîchage'];
-
-                // Prepare data
-                const data = types.map(type => ({
-                    type,
-                    values: years.map(year => ({
-                        year,
-                        value: regionsDataByYear[year]?.[selectedRegion]?.[type] || 0
-                    }))
-                }));
-
-                const x = d3.scaleLinear()
-                    .domain([1990, 2020])
-                    .range([margin.left, width - margin.right]);
-
-                const y = d3.scaleLinear()
-                    .domain([0, 80])
-                    .range([height - margin.bottom, margin.top]);
-
-                const line = d3.line()
-                    .x(d => x(d.year))
-                    .y(d => y(d.value))
-                    .curve(d3.curveMonotoneX);
-
-                // Draw axes
-                svg.append("g")
-                    .attr("transform", `translate(0,${height - margin.bottom})`)
-                    .call(d3.axisBottom(x).tickFormat(d3.format("d")).ticks(4))
-                    .style("font-size", "10px");
-
-                svg.append("g")
-                    .attr("transform", `translate(${margin.left},0)`)
-                    .call(d3.axisLeft(y).ticks(5))
-                    .style("font-size", "10px");
-
-                // Y axis label
-                svg.append("text")
-                    .attr("transform", "rotate(-90)")
-                    .attr("y", 15)
-                    .attr("x", -(height / 2))
-                    .attr("text-anchor", "middle")
-                    .attr("font-size", "11px")
-                    .attr("fill", "#666")
-                    .text("Part (%)");
-
-                // Draw lines
-                data.forEach(serie => {
-                    svg.append("path")
-                        .datum(serie.values)
-                        .attr("fill", "none")
-                        .attr("stroke", colors[serie.type])
-                        .attr("stroke-width", 2.5)
-                        .attr("d", line);
-
-                    // Add points
-                    svg.selectAll(`.point-${serie.type}`)
-                        .data(serie.values)
-                        .enter()
-                        .append("circle")
-                        .attr("cx", d => x(d.year))
-                        .attr("cy", d => y(d.value))
-                        .attr("r", 4)
-                        .attr("fill", colors[serie.type])
-                        .attr("stroke", "white")
-                        .attr("stroke-width", 2);
-
-                    // Add legend
-                    const lastValue = serie.values[serie.values.length - 1];
-                    svg.append("text")
-                        .attr("x", width - margin.right + 5)
-                        .attr("y", y(lastValue.value) + 4)
-                        .attr("font-size", "10px")
-                        .attr("fill", colors[serie.type])
-                        .attr("font-weight", "600")
-                        .text(serie.type);
-                });
-
-                // Highlight current year
-                svg.append("line")
-                    .attr("x1", x(selectedYear))
-                    .attr("x2", x(selectedYear))
-                    .attr("y1", margin.top)
-                    .attr("y2", height - margin.bottom)
-                    .attr("stroke", "#f59e0b")
-                    .attr("stroke-width", 2)
-                    .attr("stroke-dasharray", "5,5");
-
-            }, [selectedRegion, selectedYear]);
-
-            const regionStats = selectedRegion ? regionsDataByYear[selectedYear]?.[selectedRegion] : null;
-            const yearStats = selectedRegion && historicalData[selectedYear] ? 
-                historicalData[selectedYear][selectedRegion] : null;
-
-            // Export functions
-            const exportMapAsPNG = async () => {
-                try {
-                    const mapElement = mapRef.current.parentElement;
-                    const canvas = await html2canvas(mapElement, {
-                        backgroundColor: '#fafaf9',
-                        scale: 2
-                    });
-                    
-                    const link = document.createElement('a');
-                    link.download = `agriscopefr-carte-${selectedYear}.png`;
-                    link.href = canvas.toDataURL();
-                    link.click();
-                } catch (error) {
-                    console.error('Export error:', error);
-                    alert('Erreur lors de l\'export. Veuillez réessayer.');
-                }
-            };
-
-            const exportReportAsPDF = async () => {
-                try {
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    
-                    // Title
-                    pdf.setFontSize(20);
-                    pdf.setTextColor(120, 90, 60);
-                    pdf.text('AgriScopeFR - Rapport', 20, 20);
-                    
-                    pdf.setFontSize(12);
-                    pdf.setTextColor(87, 83, 78);
-                    pdf.text(`Agriculture en France - Année ${selectedYear}`, 20, 30);
-                    
-                    // Capture map
-                    const mapElement = mapRef.current.parentElement;
-                    const canvas = await html2canvas(mapElement, {
-                        backgroundColor: '#fafaf9',
-                        scale: 1.5
-                    });
-                    
-                    const imgData = canvas.toDataURL('image/png');
-                    pdf.addImage(imgData, 'PNG', 20, 40, 170, 120);
-                    
-                    // Add data if region selected
-                    if (selectedRegion && regionStats) {
-                        pdf.setFontSize(14);
-                        pdf.setTextColor(180, 124, 68);
-                        pdf.text(`Région: ${selectedRegion}`, 20, 170);
-                        
-                        pdf.setFontSize(10);
-                        pdf.setTextColor(0, 0, 0);
-                        let yPos = 180;
-                        
-                        pdf.text(`Grandes cultures: ${regionStats.grandes}%`, 30, yPos);
-                        pdf.text(`Élevage: ${regionStats.élevage}%`, 30, yPos + 7);
-                        pdf.text(`Viticulture: ${regionStats.viticulture}%`, 30, yPos + 14);
-                        pdf.text(`Maraîchage: ${regionStats.maraîchage}%`, 30, yPos + 21);
-                        
-                        if (yearStats) {
-                            pdf.text(`Eau: ${yearStats.water} m³/ha`, 110, yPos);
-                            pdf.text(`GES: ${yearStats.emissions} Mt CO₂eq`, 110, yPos + 7);
-                        }
-                    }
-                    
-                    // Footer
-                    pdf.setFontSize(8);
-                    pdf.setTextColor(156, 163, 175);
-                    pdf.text('Généré par AgriScopeFR - Visualisation interactive de données agricoles', 20, 285);
-                    
-                    pdf.save(`agriscopefr-rapport-${selectedYear}.pdf`);
-                } catch (error) {
-                    console.error('PDF export error:', error);
-                    alert('Erreur lors de la création du PDF. Veuillez réessayer.');
-                }
-            };
-
-            return (
-                <div className="h-screen bg-stone-100 overflow-hidden flex flex-col">
-                    {/* Compact Header */}
-                    <header className="bg-gradient-to-r from-amber-50 to-stone-100 shadow-md px-6 py-4 border-b-2 border-amber-600">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="text-3xl font-bold text-stone-800 flex items-center gap-3">
-                                    <span className="text-amber-700">🌾</span>
-                                    <span>AgriScopeFR</span>
-                                </h1>
-                                <p className="text-sm text-stone-600 mt-1 font-medium">Observatoire de l'agriculture française • 1990-2020</p>
+                    {/* year */}
+                    <div style={{display:'flex', alignItems:'center', gap:10}}>
+                        <button className={`play-btn${playing?' active':''}`} onClick={()=>setPlaying(!playing)}>
+                            {playing ? 'Pause' : 'Lecture'}
+                        </button>
+                        <div style={{width:160}}>
+                            <div style={{display:'flex', justifyContent:'space-between', marginBottom:4}}>
+                                <span style={{fontFamily:'var(--mono)', fontSize:'10px', color:'var(--ink-3)'}}>Année</span>
+                                <span style={{fontFamily:'var(--mono)', fontSize:'11px', fontWeight:500, color:'var(--ink)'}}>{year}</span>
                             </div>
-                            
-                            {/* Controls Group */}
-                            <div className="flex items-center gap-4">
-                                {/* Play/Pause Button */}
-                                <button
-                                    onClick={() => setIsPlaying(!isPlaying)}
-                                    className={`px-5 py-2.5 rounded-md font-semibold shadow-md transition-all border-2 ${
-                                        isPlaying 
-                                            ? 'bg-stone-700 hover:bg-stone-800 text-white border-stone-800' 
-                                            : 'bg-amber-600 hover:bg-amber-700 text-white border-amber-700'
-                                    }`}
-                                >
-                                    {isPlaying ? '❚❚ Pause' : '▶ Lecture'}
-                                </button>
-                                
-                                {/* Year Slider */}
-                                <div className="bg-white px-6 py-3 rounded-md border-2 border-stone-300">
-                                    <label className="block text-sm font-semibold text-stone-700 mb-1">
-                                        Année : <span className="text-amber-700">{selectedYear}</span>
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min="1990"
-                                        max="2020"
-                                        step="10"
-                                        value={selectedYear}
-                                        onChange={(e) => {
-                                            setSelectedYear(Number(e.target.value));
-                                            setIsPlaying(false); // Stop playing when manually changing
-                                        }}
-                                        className="w-64"
-                                    />
-                                    <div className="flex justify-between text-xs text-stone-600 mt-1 font-medium">
-                                        <span>1990</span>
-                                        <span>2000</span>
-                                        <span>2010</span>
-                                        <span>2020</span>
-                                    </div>
-                                </div>
-                                
-                                {/* Export Buttons */}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={exportMapAsPNG}
-                                        className="px-4 py-2.5 bg-stone-600 hover:bg-stone-700 text-white rounded-md font-semibold shadow-md transition-colors text-sm border-2 border-stone-700"
-                                        title="Exporter la carte en PNG"
-                                    >
-                                        📸 PNG
-                                    </button>
-                                    <button
-                                        onClick={exportReportAsPDF}
-                                        className="px-4 py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-md font-semibold shadow-md transition-colors text-sm border-2 border-amber-800"
-                                        title="Exporter le rapport en PDF"
-                                    >
-                                        📄 PDF
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </header>
-
-                    {/* Main Content Grid */}
-                    <div className="flex-1 grid grid-cols-12 gap-4 p-4 overflow-hidden">
-                        {/* Left Panel - Map Section */}
-                        <div className="col-span-8 bg-white rounded-xl shadow-xl overflow-hidden flex flex-col">
-                            {/* Controls Bar */}
-                            <div className="bg-gradient-to-r from-stone-700 to-stone-800 p-4 border-b-2 border-amber-600">
-                                <div className="flex items-center justify-between gap-6">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-semibold text-stone-200 mb-2 flex items-center gap-2">
-                                            Indicateur :
-                                            {isPlaying && (
-                                                <span className="px-2 py-1 bg-amber-600 text-white text-xs rounded-md font-bold">
-                                                    ● LECTURE
-                                                </span>
-                                            )}
-                                        </label>
-                                        <div className="flex gap-3">
-                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md cursor-pointer transition-colors border border-white/20">
-                                                <input
-                                                    type="radio"
-                                                    value="dominant"
-                                                    checked={indicator === 'dominant'}
-                                                    onChange={(e) => setIndicator(e.target.value)}
-                                                    className="mr-2"
-                                                />
-                                                <span className="text-white text-sm font-medium">🌾 Cultures</span>
-                                            </label>
-                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md cursor-pointer transition-colors border border-white/20">
-                                                <input
-                                                    type="radio"
-                                                    value="water"
-                                                    checked={indicator === 'water'}
-                                                    onChange={(e) => setIndicator(e.target.value)}
-                                                    className="mr-2"
-                                                />
-                                                <span className="text-white text-sm font-medium">💧 Eau</span>
-                                            </label>
-                                            <label className="flex items-center bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md cursor-pointer transition-colors border border-white/20">
-                                                <input
-                                                    type="radio"
-                                                    value="emissions"
-                                                    checked={indicator === 'emissions'}
-                                                    onChange={(e) => setIndicator(e.target.value)}
-                                                    className="mr-2"
-                                                />
-                                                <span className="text-white text-sm font-medium">🌍 GES</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                   
-                                </div>
-                            </div>
-
-                            {/* Map Container */}
-                            <div className="flex-1 relative overflow-hidden bg-stone-50">
-                                <div ref={mapRef} className="absolute inset-0 flex items-center justify-center">
-                                    {!franceGeoJSON && (
-                                        <div className="text-center">
-                                            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-amber-600 mx-auto mb-4"></div>
-                                            <p className="text-stone-700 font-semibold">Chargement de la carte...</p>
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                {/* Legend Overlay */}
-                                <div className="absolute bottom-4 left-4 bg-white/98 backdrop-blur-sm rounded-md shadow-lg p-5 max-w-md border-2 border-stone-300">
-                                    <p className="text-base font-bold text-stone-800 mb-3 flex items-center gap-2">
-                                        <span className="text-amber-700">📍</span> <span>Légende</span>
-                                    </p>
-                                    
-                                    {indicator === 'dominant' && (
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {Object.entries(colors).map(([type, color]) => (
-                                                <div key={type} className="flex items-center">
-                                                    <div className="w-5 h-5 mr-2 rounded shadow-sm" style={{ backgroundColor: color }} />
-                                                    <span className="text-sm font-medium">{emojis[type]} {type}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    
-                                    {indicator === 'water' && (
-                                        <div>
-                                            <p className="text-sm text-gray-600 mb-2 font-medium">💧 Consommation d'eau (m³/ha)</p>
-                                            <div className="h-6 rounded-lg shadow-sm" style={{
-                                                background: 'linear-gradient(to right, #deebf7, #3182bd, #08519c)'
-                                            }}></div>
-                                            <div className="flex justify-between text-sm text-gray-700 mt-2 font-medium">
-                                                <span>Faible<br/>1000</span>
-                                                <span className="text-center">Moyen<br/>1800</span>
-                                                <span className="text-right">Élevé<br/>2600</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
-                                    {indicator === 'emissions' && (
-                                        <div>
-                                            <p className="text-sm text-gray-600 mb-2 font-medium">🌍 Émissions de GES (Mt CO₂eq)</p>
-                                            <div className="h-6 rounded-lg shadow-sm" style={{
-                                                background: 'linear-gradient(to right, #fee5d9, #fc9272, #de2d26, #a50f15)'
-                                            }}></div>
-                                            <div className="flex justify-between text-sm text-gray-700 mt-2 font-medium">
-                                                <span>Faible<br/>5</span>
-                                                <span className="text-center">Moyen<br/>10</span>
-                                                <span className="text-right">Élevé<br/>15</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Selected Region Info Overlay */}
-                                {selectedRegion && (
-                                    <div className="absolute top-4 right-4 bg-gradient-to-br from-amber-700 to-amber-800 text-white rounded-md shadow-xl p-4 max-w-sm border-2 border-amber-900">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <h4 className="text-lg font-bold mb-1 flex items-center gap-2">
-                                                    <span>📌</span> {selectedRegion}
-                                                </h4>
-                                                <p className="text-xs text-amber-100">
-                                                    Cliquez pour revenir à la carte complète
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Right Panel - Charts and Stats */}
-                        <div className="col-span-4 flex flex-col gap-4 overflow-y-auto">
-                            {/* Radar Chart */}
-                            <div className="bg-white rounded-lg shadow-md p-5 border border-stone-200">
-                                <h3 className="text-base font-bold text-stone-800 mb-3 pb-2 border-b-2 border-amber-600">
-                                    Profil Agricole
-                                </h3>
-                                <div ref={radarRef} className="flex items-center justify-center" />
-                            </div>
-
-                            {/* Evolution Chart - Only shown when region is selected */}
-                            {selectedRegion && (
-                                <div className="bg-white rounded-lg shadow-md p-5 border border-stone-200">
-                                    <h3 className="text-base font-bold text-stone-800 mb-3 pb-2 border-b-2 border-amber-600">
-                                        Évolution 1990-2020
-                                    </h3>
-                                    <div ref={evolutionRef} className="flex items-center justify-center" />
-                                    <p className="text-xs text-stone-500 mt-2 text-center">
-                                        La ligne orange indique l'année sélectionnée
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Statistics */}
-                            <div className="bg-white rounded-lg shadow-md p-5 flex-1 border border-stone-200">
-                                <h3 className="text-base font-bold text-stone-800 mb-3 pb-2 border-b-2 border-amber-600">
-                                    Statistiques Détaillées
-                                </h3>
-                                
-                                {selectedRegion && regionStats ? (
-                                    <div className="space-y-3">
-                                        <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
-                                            <h4 className="font-bold text-stone-800 text-sm mb-2">{selectedRegion} • {selectedYear}</h4>
-                                            <div className="space-y-1.5">
-                                                {Object.entries(regionStats).map(([type, value]) => (
-                                                    <div key={type} className="flex items-center justify-between">
-                                                        <span className="text-xs text-gray-700 flex items-center gap-1">
-                                                            {emojis[type]} <span className="capitalize">{type}</span>
-                                                        </span>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                                                                <div 
-                                                                    className="h-2 rounded-full" 
-                                                                    style={{ 
-                                                                        width: `${value}%`,
-                                                                        backgroundColor: colors[type]
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="font-bold text-sm w-10 text-right">{value}%</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {yearStats && (
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-blue-50 p-3 rounded-md border-l-4 border-blue-600">
-                                                    <p className="text-xs text-blue-800 font-semibold">💧 Eau</p>
-                                                    <p className="text-lg font-bold text-blue-900">{yearStats.water}</p>
-                                                    <p className="text-xs text-blue-700">m³/ha</p>
-                                                </div>
-                                                <div className="bg-orange-50 p-3 rounded-md border-l-4 border-orange-600">
-                                                    <p className="text-xs text-orange-800 font-semibold">🌍 GES</p>
-                                                    <p className="text-lg font-bold text-orange-900">{yearStats.emissions}</p>
-                                                    <p className="text-xs text-orange-700">Mt CO₂eq</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 text-stone-400">
-                                        <div className="text-4xl mb-2">🗺️</div>
-                                        <p className="text-sm font-medium">Sélectionnez une région<br/>pour voir les détails</p>
-                                    </div>
-                                )}
-                            </div>
+                            <input type="range" min="1990" max="2020" step="10" value={year}
+                                onChange={e => { setYear(+e.target.value); setPlaying(false); }} />
                         </div>
                     </div>
-                </div>
-            );
-        }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AgriScopeFR />);
-    </script>
+                    {/* divider */}
+                    <div style={{width:1, height:20, background:'var(--rule)'}} />
+
+                    {/* exports */}
+                    <div style={{display:'flex', gap:4}}>
+                        <button className="exp-btn" onClick={exportPNG}>PNG</button>
+                        <button className="exp-btn" onClick={exportPDF}>PDF</button>
+                    </div>
+                </div>
+            </header>
+
+            {/* ── BODY ── */}
+            <div style={{flex:1, display:'grid', gridTemplateColumns:'1fr 280px', overflow:'hidden', minHeight:0}}>
+
+                {/* MAP PANEL */}
+                <div style={{position:'relative', overflow:'hidden', background:'#ECEAE3'}}>
+
+                    {/* map container — observed */}
+                    <div ref={mapEl} style={{position:'absolute', inset:0}}>
+                        {!geo && (
+                            <div style={{
+                                position:'absolute', inset:0, display:'flex',
+                                alignItems:'center', justifyContent:'center',
+                                fontFamily:'var(--sans)', fontSize:'13px', color:'var(--ink-3)',
+                                fontStyle:'italic',
+                            }}>
+                                Chargement…
+                            </div>
+                        )}
+                    </div>
+
+                    {/* bulletin strip */}
+                    {showBulletin && bulletin && (
+                        <div className="bulletin-in" style={{
+                            position:'absolute', bottom:0, left:0, right:0,
+                            background:'rgba(250,250,248,0.96)',
+                            backdropFilter:'blur(6px)',
+                            borderTop:'1px solid var(--rule)',
+                            padding:'14px 20px 12px',
+                            zIndex:20,
+                        }}>
+                            {/* header line */}
+                            <div style={{display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:10}}>
+                                <div style={{display:'flex', alignItems:'baseline', gap:8}}>
+                                    <span style={{
+                                        fontFamily:'var(--mono)', fontSize:'9px',
+                                        color:'var(--ink-3)', letterSpacing:'0.1em', textTransform:'uppercase',
+                                    }}>Évolution {bulletin.prev}–{bulletin.year}</span>
+                                    {region && <span style={{fontFamily:'var(--mono)', fontSize:'9px', color:'var(--accent)'}}>· {region}</span>}
+                                </div>
+                                <button onClick={()=>setShowBulletin(false)} style={{
+                                    background:'none', border:'none', cursor:'pointer',
+                                    fontFamily:'var(--sans)', fontSize:'16px',
+                                    color:'var(--ink-3)', lineHeight:1, padding:0,
+                                }}>×</button>
+                            </div>
+
+                            {/* three sentences */}
+                            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
+                                {[
+                                    {line: bulletin.cropLine,  label:'Cultures',   col:'var(--accent)'},
+                                    {line: bulletin.waterLine, label:'Eau',         col:'var(--blue)'},
+                                    {line: bulletin.gesLine,   label:'Émissions',   col:'var(--red)'},
+                                ].map(({line,label,col}) => line && (
+                                    <div key={label} className="fade-in">
+                                        <span style={{
+                                            display:'inline-block',
+                                            fontFamily:'var(--mono)', fontSize:'8px',
+                                            letterSpacing:'0.1em', textTransform:'uppercase',
+                                            color: col, marginBottom:4,
+                                        }}>{label}</span>
+                                        <p style={{
+                                            margin:0, fontFamily:'var(--serif)',
+                                            fontSize:'12px', lineHeight:1.6,
+                                            color:'var(--ink-2)', fontStyle:'italic',
+                                        }}>{line}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* drain bar */}
+                            <div style={{marginTop:10, height:1, background:'var(--rule)', overflow:'hidden'}}>
+                                <div style={{height:'100%', background:'var(--ink-3)', animation:'drain 7s linear forwards'}} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* legend — minimal, bottom-left */}
+                    <div style={{
+                        position:'absolute', top:12, left:12,
+                        background:'rgba(250,250,248,0.92)',
+                        backdropFilter:'blur(4px)',
+                        border:'1px solid var(--rule)',
+                        borderRadius:3,
+                        padding:'8px 12px',
+                        zIndex:10,
+                    }}>
+                        {ind === 'cultures' && (
+                            <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                                {Object.entries(COLORS).map(([k,col]) => (
+                                    <div key={k} style={{display:'flex', alignItems:'center', gap:6}}>
+                                        <div style={{width:10, height:10, borderRadius:1, background:col, flexShrink:0}} />
+                                        <span style={{fontFamily:'var(--sans)', fontSize:'10px', color:'var(--ink-2)'}}>{LABELS[k]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {ind === 'eau' && (
+                            <div>
+                                <div style={{width:90, height:6, borderRadius:1, background:'linear-gradient(to right,#dce8f5,#1a4a82)', marginBottom:4}} />
+                                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--mono)', fontSize:'8.5px', color:'var(--ink-3)'}}>
+                                    <span>600</span><span>2 600 m³/ha</span>
+                                </div>
+                            </div>
+                        )}
+                        {ind === 'ges' && (
+                            <div>
+                                <div style={{width:90, height:6, borderRadius:1, background:'linear-gradient(to right,#f5e8dc,#7a1a10)', marginBottom:4}} />
+                                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--mono)', fontSize:'8.5px', color:'var(--ink-3)'}}>
+                                    <span>2</span><span>11 Mt CO₂eq</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* back button when zoomed */}
+                    {region && (
+                        <button onClick={() => setRegion(null)} style={{
+                            position:'absolute', top:12, right:12, zIndex:10,
+                            background:'rgba(250,250,248,0.92)', backdropFilter:'blur(4px)',
+                            border:'1px solid var(--rule)', borderRadius:3,
+                            fontFamily:'var(--sans)', fontSize:'11px', color:'var(--ink-2)',
+                            padding:'5px 10px', cursor:'pointer',
+                        }}>
+                            ← France entière
+                        </button>
+                    )}
+                </div>
+
+                {/* RIGHT SIDEBAR */}
+                <div style={{
+                    background:'var(--surface)',
+                    borderLeft:'1px solid var(--rule)',
+                    display:'flex', flexDirection:'column',
+                    overflowY:'auto', minHeight:0,
+                }}>
+
+                    {/* radar */}
+                    <div style={{padding:'16px 16px 8px', borderBottom:'1px solid var(--rule)'}}>
+                        <p style={{fontFamily:'var(--serif)', fontSize:'11px', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                            Profil agricole{region ? ` — ${region}` : ', top 4 régions'}
+                        </p>
+                        <div ref={radarEl} />
+                    </div>
+
+                    {/* evolution */}
+                    {region && (
+                        <div style={{padding:'14px 16px 8px', borderBottom:'1px solid var(--rule)'}}>
+                            <p style={{fontFamily:'var(--serif)', fontSize:'11px', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                                Évolution 1990–2020
+                            </p>
+                            <div ref={evoEl} />
+                            <p style={{fontFamily:'var(--sans)', fontSize:'9px', color:'var(--ink-3)', marginTop:6, fontStyle:'italic'}}>
+                                Trait vertical = {year}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* stats */}
+                    <div style={{padding:'14px 16px', flex:1}}>
+                        {region && regionCrops ? (
+                            <>
+                                <p style={{fontFamily:'var(--serif)', fontSize:'11px', fontWeight:600, color:'var(--ink)', marginBottom:12}}>
+                                    {region} · <span style={{fontFamily:'var(--mono)', fontWeight:400, color:'var(--ink-3)'}}>{year}</span>
+                                </p>
+
+                                {/* crop bars */}
+                                <div style={{display:'flex', flexDirection:'column', gap:7, marginBottom:14}}>
+                                    {Object.entries(regionCrops).map(([k,v]) => (
+                                        <div key={k} style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                                            <span style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--ink-2)', width:100, flexShrink:0}}>{LABELS[k]}</span>
+                                            <div style={{flex:1, display:'flex', alignItems:'center', gap:8}}>
+                                                <div className="stat-bar-track" style={{flex:1}}>
+                                                    <div className="stat-bar-fill" style={{width:`${v}%`, background:COLORS[k]}} />
+                                                </div>
+                                                <span style={{fontFamily:'var(--mono)', fontSize:'10px', color:'var(--ink-2)', width:28, textAlign:'right'}}>{v}%</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* env data */}
+                                {regionEnv && (
+                                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+                                        <div style={{background:'var(--bg)', borderRadius:3, padding:'8px 10px'}}>
+                                            <div style={{fontFamily:'var(--mono)', fontSize:'8px', color:'var(--ink-3)', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4}}>Eau</div>
+                                            <div style={{fontFamily:'var(--serif)', fontSize:'1.2rem', fontWeight:600, color:'var(--blue)', lineHeight:1}}>{regionEnv.water.toLocaleString('fr-FR')}</div>
+                                            <div style={{fontFamily:'var(--sans)', fontSize:'9px', color:'var(--ink-3)', marginTop:2}}>m³/ha</div>
+                                        </div>
+                                        <div style={{background:'var(--bg)', borderRadius:3, padding:'8px 10px'}}>
+                                            <div style={{fontFamily:'var(--mono)', fontSize:'8px', color:'var(--ink-3)', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4}}>GES</div>
+                                            <div style={{fontFamily:'var(--serif)', fontSize:'1.2rem', fontWeight:600, color:'var(--red)', lineHeight:1}}>{regionEnv.ges}</div>
+                                            <div style={{fontFamily:'var(--sans)', fontSize:'9px', color:'var(--ink-3)', marginTop:2}}>Mt CO₂eq</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div style={{paddingTop:16}}>
+                                <p style={{fontFamily:'var(--serif)', fontSize:'13px', color:'var(--ink-3)', fontStyle:'italic', lineHeight:1.6}}>
+                                    Cliquez sur une région de la carte pour afficher son profil détaillé.
+                                </p>
+                                <div style={{marginTop:16, paddingTop:16, borderTop:'1px solid var(--rule)'}}>
+                                    <p style={{fontFamily:'var(--mono)', fontSize:'9px', color:'var(--ink-3)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:8}}>Note de lecture</p>
+                                    <p style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--ink-2)', lineHeight:1.6}}>
+                                        Faites glisser le curseur d'année pour faire apparaître l'analyse décennale en bas de carte.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* footer credit */}
+                    <div style={{padding:'10px 16px', borderTop:'1px solid var(--rule)'}}>
+                        <p style={{fontFamily:'var(--sans)', fontSize:'9px', color:'var(--ink-3)', lineHeight:1.5}}>
+                            Sources : Agreste · Citepa · SDES<br/>Recensements agricoles 1990–2020
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
