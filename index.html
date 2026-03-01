@@ -167,6 +167,36 @@
             border-radius: 1px;
             transition: width 0.4s ease;
         }
+
+        /* RESIZE HANDLE */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            left: -4px;
+            cursor: col-resize;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .resize-handle::before {
+            content: '';
+            width: 2px;
+            height: 40px;
+            background: var(--rule);
+            border-radius: 1px;
+            transition: all 0.15s;
+        }
+        .resize-handle:hover::before {
+            background: var(--ink-3);
+            height: 60px;
+        }
+        .resize-handle.dragging::before {
+            background: var(--ink);
+            height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -374,6 +404,8 @@ function App() {
     const [mapSize, setMapSize]           = useState({w:0,h:0});
     const [bulletin, setBulletin]         = useState(null);
     const [showBulletin, setShowBulletin] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(320);
+    const [isDragging, setIsDragging]     = useState(false);
 
     const mapEl     = useRef(null);
     const radarEl   = useRef(null);
@@ -420,6 +452,33 @@ function App() {
         }
         prevYrRef.current = year;
     }, [year, region]);
+
+    // RESIZE HANDLER
+    const handleMouseDown = useCallback((e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isDragging) return;
+        
+        const handleMouseMove = (e) => {
+            const newWidth = window.innerWidth - e.clientX;
+            setSidebarWidth(Math.max(240, Math.min(600, newWidth)));
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging]);
 
     const dominant = d => {
         const entries = Object.entries(d).filter(([k]) => k.length===1);
@@ -680,7 +739,7 @@ function App() {
 
     /* ═══ RENDER ═══ */
     return (
-        <div style={{height:'100vh', display:'flex', flexDirection:'column', background:'var(--bg)', overflow:'hidden'}}>
+        <div style={{height:'100vh', display:'flex', flexDirection:'column', background:'var(--bg)', overflow:'hidden', userSelect: isDragging ? 'none' : 'auto'}}>
 
             {/* ── HEADER ── */}
             <header style={{
@@ -750,10 +809,10 @@ function App() {
             </header>
 
             {/* ── BODY ── */}
-            <div style={{flex:1, display:'grid', gridTemplateColumns:'1fr 280px', overflow:'hidden', minHeight:0}}>
+            <div style={{flex:1, display:'flex', overflow:'hidden', minHeight:0}}>
 
                 {/* MAP PANEL */}
-                <div style={{position:'relative', overflow:'hidden', background:'#ECEAE3'}}>
+                <div style={{flex:1, position:'relative', overflow:'hidden', background:'#ECEAE3'}}>
 
                     {/* map container — observed */}
                     <div ref={mapEl} style={{position:'absolute', inset:0}}>
@@ -825,7 +884,7 @@ function App() {
                         </div>
                     )}
 
-                    {/* legend — minimal, bottom-left */}
+                    {/* legend — minimal, top-left */}
                     <div style={{
                         position:'absolute', top:12, left:12,
                         background:'rgba(250,250,248,0.92)',
@@ -879,11 +938,28 @@ function App() {
 
                 {/* RIGHT SIDEBAR */}
                 <div style={{
+                    width: sidebarWidth,
+                    flexShrink: 0,
+                    position: 'relative',
                     background:'var(--surface)',
                     borderLeft:'1px solid var(--rule)',
                     display:'flex', flexDirection:'column',
                     overflowY:'auto', minHeight:0,
                 }}>
+                    {/* RESIZE HANDLE */}
+                    <div 
+                        className={`resize-handle${isDragging ? ' dragging' : ''}`}
+                        onMouseDown={handleMouseDown}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            left: -4,
+                            width: 8,
+                            cursor: 'col-resize',
+                            zIndex: 100,
+                        }}
+                    />
 
                     {/* radar */}
                     <div style={{padding:'16px 16px 8px', borderBottom:'1px solid var(--rule)'}}>
