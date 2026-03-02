@@ -623,7 +623,7 @@ function App() {
         });
 
         const lineGen = d3.line().x(d=>d.x).y(d=>d.y).curve(d3.curveLinearClosed);
-        const regions = region ? [region] : Object.keys(CROP_DATA[year]).slice(0,4);
+        const regions = region ? [region] : Object.keys(CROP_DATA[year]); // Toutes les régions
 
         regions.forEach(reg => {
             const cd = CROP_DATA[year][reg];
@@ -635,11 +635,11 @@ function App() {
                 return {x: r*Math.cos(a), y: r*Math.sin(a)};
             });
             g.append('path').datum(pts).attr('d',lineGen)
-             .attr('fill',col).attr('fill-opacity', region ? 0.18 : 0.1)
-             .attr('stroke',col).attr('stroke-width', region ? 2 : 1.2).attr('stroke-opacity',0.9);
+             .attr('fill',col).attr('fill-opacity', region ? 0.18 : 0.05)
+             .attr('stroke',col).attr('stroke-width', region ? 2 : 0.8).attr('stroke-opacity', region ? 0.9 : 0.7);
             pts.forEach(pt => {
-                g.append('circle').attr('cx',pt.x).attr('cy',pt.y).attr('r',2.5)
-                 .attr('fill',col).attr('stroke','#FAFAF8').attr('stroke-width',1);
+                g.append('circle').attr('cx',pt.x).attr('cy',pt.y).attr('r', region ? 2.5 : 1.5)
+                 .attr('fill',col).attr('stroke','#FAFAF8').attr('stroke-width', region ? 1 : 0.5);
             });
         });
 
@@ -964,7 +964,7 @@ function App() {
                     {/* radar */}
                     <div style={{padding:'16px 16px 8px', borderBottom:'1px solid var(--rule)'}}>
                         <p style={{fontFamily:'var(--serif)', fontSize:'11px', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
-                            Profil agricole{region ? ` — ${region}` : ', top 4 régions'}
+                            Profil agricole{region ? ` — ${region}` : ', 12 régions'}
                         </p>
                         <div ref={radarEl} />
                     </div>
