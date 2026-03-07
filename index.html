@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriScopeFR</title>
+    <title>AgriScopeFR — Évolution de l'agriculture française 1990-2020</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -196,6 +196,104 @@
         .resize-handle.dragging::before {
             background: var(--ink);
             height: 100%;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(28, 25, 23, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            width: min(720px, 90vw);
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            animation: slideUp 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .modal-header {
+            padding: 24px 28px 20px;
+            border-bottom: 1px solid var(--rule);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .modal-body {
+            padding: 24px 28px;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--ink-3);
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+        .close-btn:hover { color: var(--ink); }
+        
+        .insight-card {
+            background: var(--bg);
+            border-left: 3px solid var(--accent);
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 2px;
+        }
+        .insight-card.warning {
+            border-left-color: var(--red);
+        }
+        .insight-card.info {
+            border-left-color: var(--blue);
+        }
+
+        .info-btn {
+            font-family: var(--sans);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--ink-2);
+            transition: all 0.12s;
+        }
+        .info-btn:hover { color: var(--ink); border-color: var(--ink-2); }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: rgba(28, 25, 23, 0.95);
+            color: var(--surface);
+            padding: 10px 14px;
+            border-radius: 3px;
+            font-family: var(--sans);
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 280px;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .tooltip-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        .tooltip-value {
+            font-family: var(--mono);
+            font-size: 10px;
+            opacity: 0.85;
         }
     </style>
 </head>
@@ -393,6 +491,231 @@ function makeBulletin(year, region) {
 }
 
 /* ─────────────────────────────────────────
+   MODALS
+───────────────────────────────────────── */
+function WelcomeModal({ onClose }) {
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <div>
+                        <h1 style={{fontFamily:'var(--serif)', fontSize:'1.6rem', fontWeight:600, color:'var(--ink)', marginBottom:6}}>
+                            AgriScopeFR
+                        </h1>
+                        <p style={{fontFamily:'var(--sans)', fontSize:'13px', color:'var(--ink-3)'}}>
+                            Visualisation interactive de l'évolution agricole française, 1990–2020
+                        </p>
+                    </div>
+                    <button className="close-btn" onClick={onClose}>×</button>
+                </div>
+                <div className="modal-body">
+                    <section style={{marginBottom:24}}>
+                        <h2 style={{fontFamily:'var(--serif)', fontSize:'1.1rem', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                             Résultats principaux
+                        </h2>
+                        
+                        <div className="insight-card">
+                            <div style={{fontFamily:'var(--mono)', fontSize:'9px', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--accent)', marginBottom:6}}>
+                                Spécialisation territoriale
+                            </div>
+                            <p style={{fontFamily:'var(--serif)', fontSize:'13px', lineHeight:1.6, color:'var(--ink-2)'}}>
+                                Entre 1990 et 2020, les grandes cultures progressent de <strong>+9 points</strong> en Île-de-France, 
+                                tandis que l'élevage recule de <strong>-7 points</strong> en Bretagne. La France s'oriente vers des 
+                                territoires plus spécialisés.
+                            </p>
+                        </div>
+
+                        <div className="insight-card warning">
+                            <div style={{fontFamily:'var(--mono)', fontSize:'9px', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--red)', marginBottom:6}}>
+                                Impact environnemental
+                            </div>
+                            <p style={{fontFamily:'var(--serif)', fontSize:'13px', lineHeight:1.6, color:'var(--ink-2)'}}>
+                                La consommation d'eau agricole augmente en moyenne de <strong>+300 m³/ha</strong> sur 30 ans, 
+                                avec des pics dans le sud (PACA : +500 m³/ha). Les émissions de GES baissent globalement 
+                                de <strong>-2,7 Mt CO₂eq</strong>, mais restent élevées dans les zones d'élevage intensif.
+                            </p>
+                        </div>
+
+                        <div className="insight-card info">
+                            <div style={{fontFamily:'var(--mono)', fontSize:'9px', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--blue)', marginBottom:6}}>
+                                Diversité régionale
+                            </div>
+                            <p style={{fontFamily:'var(--serif)', fontSize:'13px', lineHeight:1.6, color:'var(--ink-2)'}}>
+                                Chaque région développe son identité : le Grand Est et la Nouvelle-Aquitaine renforcent 
+                                leur viticulture (+2 pts), tandis que le maraîchage progresse en PACA (+2 pts) et 
+                                Hauts-de-France (-3 pts mais encore 15% en 2020).
+                            </p>
+                        </div>
+                    </section>
+
+                    <section style={{marginBottom:24}}>
+                        <h2 style={{fontFamily:'var(--serif)', fontSize:'1.1rem', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                             Comment utiliser l'outil
+                        </h2>
+                        <ul style={{fontFamily:'var(--sans)', fontSize:'12px', lineHeight:1.8, color:'var(--ink-2)', paddingLeft:20}}>
+                            <li>Utilisez le <strong>slider temporel</strong> ou la <strong>lecture automatique</strong> pour parcourir les décennies</li>
+                            <li>Cliquez sur une <strong>région</strong> pour voir son profil détaillé et son évolution</li>
+                            <li>Basculez entre les vues <strong>Cultures</strong>, <strong>Eau</strong> et <strong>Émissions</strong></li>
+                            <li>Le <strong>bulletin d'analyse</strong> apparaît automatiquement à chaque changement d'année</li>
+                            <li>Exportez vos visualisations en <strong>PNG</strong> ou <strong>PDF</strong></li>
+                        </ul>
+                    </section>
+
+                    <div style={{textAlign:'center', paddingTop:16, borderTop:'1px solid var(--rule)'}}>
+                        <button onClick={onClose} style={{
+                            fontFamily:'var(--sans)', fontSize:'13px', fontWeight:500,
+                            padding:'8px 24px', background:'var(--ink)', color:'var(--surface)',
+                            border:'none', borderRadius:3, cursor:'pointer'
+                        }}>
+                            Explorer les données →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AboutModal({ onClose }) {
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <div>
+                        <h1 style={{fontFamily:'var(--serif)', fontSize:'1.4rem', fontWeight:600, color:'var(--ink)'}}>
+                            Sources & Méthodologie
+                        </h1>
+                    </div>
+                    <button className="close-btn" onClick={onClose}>×</button>
+                </div>
+                <div className="modal-body">
+                    <section style={{marginBottom:24}}>
+                        <h2 style={{fontFamily:'var(--serif)', fontSize:'1.1rem', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                             Sources de données
+                        </h2>
+                        <div style={{fontFamily:'var(--sans)', fontSize:'12px', lineHeight:1.8, color:'var(--ink-2)'}}>
+                            <p style={{marginBottom:8}}>
+                                <strong>Agreste (Service de la statistique et de la prospective)</strong><br/>
+                                Recensements agricoles 1990, 2000, 2010, 2020 — données départementales et régionales 
+                                sur les surfaces agricoles utilisées (SAU) par type de culture.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Citepa (Centre Interprofessionnel Technique d'Études de la Pollution Atmosphérique)</strong><br/>
+                                Inventaire SECTEN, rapports annuels 1990–2020 — émissions de gaz à effet de serre (GES) 
+                                par secteur et par région, en Mt CO₂ équivalent.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>SDES (Service des Données et Études Statistiques)</strong><br/>
+                                Comptes de l'environnement, bases "Eau et agriculture" — volumes d'eau prélevés pour 
+                                l'irrigation, en m³/ha de SAU irriguée.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Géométries cartographiques</strong><br/>
+                                <a href="https://github.com/gregoiredavid/france-geojson" target="_blank" rel="noopener" 
+                                   style={{color:'var(--accent)', textDecoration:'none', borderBottom:'1px solid var(--accent)'}}>
+                                    france-geojson (Grégoire David)
+                                </a> — contours régionaux simplifiés (version 2021).
+                            </p>
+                        </div>
+                    </section>
+
+                    <section style={{marginBottom:24}}>
+                        <h2 style={{fontFamily:'var(--serif)', fontSize:'1.1rem', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                             Méthodologie
+                        </h2>
+                        <div style={{fontFamily:'var(--sans)', fontSize:'12px', lineHeight:1.8, color:'var(--ink-2)'}}>
+                            <p style={{marginBottom:8}}>
+                                <strong>Agrégation régionale :</strong> Les données départementales ont été agrégées au 
+                                niveau des 13 régions métropolitaines (découpage 2016). Les surfaces sont exprimées en 
+                                pourcentages de la SAU totale régionale.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Classification des cultures :</strong> 6 catégories principales — Grandes cultures 
+                                (céréales, oléagineux, protéagineux), Élevage (prairies permanentes et temporaires), 
+                                Maraîchage, Viticulture, Fruits, Autres (dont jachères et surfaces non agricoles).
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Indicateurs environnementaux :</strong> Consommation d'eau = volume total prélevé / 
+                                SAU irriguée. GES = émissions totales du secteur agricole (fermentation entérique, 
+                                fertilisation azotée, gestion des effluents) / SAU.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Interpolation :</strong> Les données sont disponibles tous les 10 ans (recensements). 
+                                Aucune interpolation intermédiaire n'a été réalisée pour préserver la fidélité aux sources.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section style={{marginBottom:24}}>
+                        <h2 style={{fontFamily:'var(--serif)', fontSize:'1.1rem', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                             Limites et bugs connus
+                        </h2>
+                        <div style={{fontFamily:'var(--sans)', fontSize:'12px', lineHeight:1.8, color:'var(--ink-2)'}}>
+                            <p style={{marginBottom:8}}>
+                                <strong>Données simplifiées :</strong> Les pourcentages ont été arrondis et légèrement 
+                                ajustés pour atteindre 100% par région. Les valeurs présentées sont <em>indicatives</em> 
+                                et visent une compréhension globale des tendances, non une précision absolue.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Couverture géographique :</strong> France métropolitaine uniquement. Les DROM-COM 
+                                ne sont pas inclus faute de données harmonisées sur la période 1990–2020.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Export PDF :</strong> La génération PDF peut parfois échouer sur certains 
+                                navigateurs (Firefox ancien, Safari iOS). Privilégiez Chrome/Edge pour les exports.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Performance :</strong> Sur les écrans à faible résolution ou les navigateurs 
+                                anciens, les animations peuvent être saccadées. Désactivez la lecture automatique 
+                                si nécessaire.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Responsivité mobile :</strong> L'interface est optimisée pour desktop (min. 1024px). 
+                                L'affichage sur mobile/tablette fonctionne mais certains éléments peuvent être compressés.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2 style={{fontFamily:'var(--serif)', fontSize:'1.1rem', fontWeight:600, color:'var(--ink)', marginBottom:10}}>
+                             Crédits
+                        </h2>
+                        <div style={{fontFamily:'var(--sans)', fontSize:'12px', lineHeight:1.8, color:'var(--ink-2)'}}>
+                            <p style={{marginBottom:8}}>
+                                <strong>Développement :</strong> Projet réalisé dans le cadre du cours MOS 9.1 Visualisation 
+                                de données — Équipe AgriScopeFR.
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Technologies :</strong> React, D3.js, HTML2Canvas, jsPDF — Fonts : Source Serif 4, 
+                                IBM Plex Sans/Mono (Google Fonts).
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Licence :</strong> Les données Agreste, Citepa et SDES sont diffusées sous 
+                                <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener" 
+                                   style={{color:'var(--accent)', textDecoration:'none', borderBottom:'1px solid var(--accent)', marginLeft:4}}>
+                                    Licence Ouverte / Open Licence
+                                </a>. 
+                                Le code source de cette visualisation est disponible sur demande.
+                            </p>
+                        </div>
+                    </section>
+
+                    <div style={{textAlign:'center', paddingTop:16, marginTop:24, borderTop:'1px solid var(--rule)'}}>
+                        <button onClick={onClose} style={{
+                            fontFamily:'var(--sans)', fontSize:'12px', fontWeight:500,
+                            padding:'6px 20px', background:'var(--rule)', color:'var(--ink-2)',
+                            border:'none', borderRadius:3, cursor:'pointer'
+                        }}>
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────
    APP
 ───────────────────────────────────────── */
 function App() {
@@ -406,6 +729,9 @@ function App() {
     const [showBulletin, setShowBulletin] = useState(false);
     const [sidebarWidth, setSidebarWidth] = useState(320);
     const [isDragging, setIsDragging]     = useState(false);
+    const [showWelcome, setShowWelcome]   = useState(true);
+    const [showAbout, setShowAbout]       = useState(false);
+    const [tooltip, setTooltip]           = useState(null);
 
     const mapEl     = useRef(null);
     const radarEl   = useRef(null);
@@ -533,7 +859,24 @@ function App() {
                 .attr('stroke', '#F4F1EC')
                 .attr('stroke-width', region ? 1.5 : 0.75)
                 .attr('class','region-path')
-                .on('click', () => setRegion(name === region ? null : (region ? null : name)));
+                .on('click', () => setRegion(name === region ? null : (region ? null : name)))
+                .on('mouseenter', (event) => {
+                    if (!cd || !ed) return;
+                    const domKey = dominant(cd);
+                    const tooltipHtml = `
+                        <div class="tooltip-title">${name}</div>
+                        ${ind === 'cultures' ? `<div class="tooltip-value">Culture dominante : ${LABELS[domKey]} (${cd[domKey]}%)</div>` : ''}
+                        ${ind === 'eau' ? `<div class="tooltip-value">Eau : ${ed.water.toLocaleString('fr-FR')} m³/ha</div>` : ''}
+                        ${ind === 'ges' ? `<div class="tooltip-value">GES : ${ed.ges} Mt CO₂eq</div>` : ''}
+                    `;
+                    setTooltip({ x: event.pageX, y: event.pageY, html: tooltipHtml });
+                })
+                .on('mousemove', (event) => {
+                    setTooltip(t => t ? { ...t, x: event.pageX, y: event.pageY } : null);
+                })
+                .on('mouseleave', () => {
+                    setTooltip(null);
+                });
 
             p.append('title').text(name === region ? 'Cliquer pour revenir' : name);
 
@@ -623,7 +966,7 @@ function App() {
         });
 
         const lineGen = d3.line().x(d=>d.x).y(d=>d.y).curve(d3.curveLinearClosed);
-        const regions = region ? [region] : Object.keys(CROP_DATA[year]); // Toutes les régions
+        const regions = region ? [region] : Object.keys(CROP_DATA[year]);
 
         regions.forEach(reg => {
             const cd = CROP_DATA[year][reg];
@@ -741,6 +1084,16 @@ function App() {
     return (
         <div style={{height:'100vh', display:'flex', flexDirection:'column', background:'var(--bg)', overflow:'hidden', userSelect: isDragging ? 'none' : 'auto'}}>
 
+            {/* MODALS */}
+            {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
+            {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+
+            {/* TOOLTIP */}
+            {tooltip && (
+                <div className="tooltip" style={{ left: tooltip.x + 10, top: tooltip.y + 10 }} 
+                     dangerouslySetInnerHTML={{ __html: tooltip.html }} />
+            )}
+
             {/* ── HEADER ── */}
             <header style={{
                 background: 'var(--surface)',
@@ -800,10 +1153,11 @@ function App() {
                     {/* divider */}
                     <div style={{width:1, height:20, background:'var(--rule)'}} />
 
-                    {/* exports */}
+                    {/* exports + about */}
                     <div style={{display:'flex', gap:4}}>
                         <button className="exp-btn" onClick={exportPNG}>PNG</button>
                         <button className="exp-btn" onClick={exportPDF}>PDF</button>
+                        <button className="info-btn" onClick={() => setShowAbout(true)}>ℹ️ Sources</button>
                     </div>
                 </div>
             </header>
@@ -884,38 +1238,42 @@ function App() {
                         </div>
                     )}
 
-                    {/* legend — minimal, top-left */}
+                    {/* legend — more visible */}
                     <div style={{
                         position:'absolute', top:12, left:12,
-                        background:'rgba(250,250,248,0.92)',
+                        background:'rgba(250,250,248,0.96)',
                         backdropFilter:'blur(4px)',
                         border:'1px solid var(--rule)',
                         borderRadius:3,
-                        padding:'8px 12px',
+                        padding:'10px 14px',
                         zIndex:10,
+                        boxShadow:'0 2px 8px rgba(0,0,0,0.08)',
                     }}>
                         {ind === 'cultures' && (
-                            <div style={{display:'flex', flexDirection:'column', gap:4}}>
+                            <div style={{display:'flex', flexDirection:'column', gap:5}}>
+                                <div style={{fontFamily:'var(--mono)', fontSize:'8px', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom:2}}>Légende</div>
                                 {Object.entries(COLORS).map(([k,col]) => (
-                                    <div key={k} style={{display:'flex', alignItems:'center', gap:6}}>
-                                        <div style={{width:10, height:10, borderRadius:1, background:col, flexShrink:0}} />
-                                        <span style={{fontFamily:'var(--sans)', fontSize:'10px', color:'var(--ink-2)'}}>{LABELS[k]}</span>
+                                    <div key={k} style={{display:'flex', alignItems:'center', gap:8}}>
+                                        <div style={{width:12, height:12, borderRadius:1, background:col, flexShrink:0}} />
+                                        <span style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--ink-2)'}}>{LABELS[k]}</span>
                                     </div>
                                 ))}
                             </div>
                         )}
                         {ind === 'eau' && (
                             <div>
-                                <div style={{width:90, height:6, borderRadius:1, background:'linear-gradient(to right,#dce8f5,#1a4a82)', marginBottom:4}} />
-                                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--mono)', fontSize:'8.5px', color:'var(--ink-3)'}}>
+                                <div style={{fontFamily:'var(--mono)', fontSize:'8px', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom:6}}>Consommation d'eau</div>
+                                <div style={{width:100, height:8, borderRadius:1, background:'linear-gradient(to right,#dce8f5,#1a4a82)', marginBottom:6}} />
+                                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--mono)', fontSize:'9px', color:'var(--ink-3)'}}>
                                     <span>600</span><span>2 600 m³/ha</span>
                                 </div>
                             </div>
                         )}
                         {ind === 'ges' && (
                             <div>
-                                <div style={{width:90, height:6, borderRadius:1, background:'linear-gradient(to right,#f5e8dc,#7a1a10)', marginBottom:4}} />
-                                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--mono)', fontSize:'8.5px', color:'var(--ink-3)'}}>
+                                <div style={{fontFamily:'var(--mono)', fontSize:'8px', letterSpacing:'0.1em', textTransform:'uppercase', color:'var(--ink-3)', marginBottom:6}}>Émissions GES</div>
+                                <div style={{width:100, height:8, borderRadius:1, background:'linear-gradient(to right,#f5e8dc,#7a1a10)', marginBottom:6}} />
+                                <div style={{display:'flex', justifyContent:'space-between', fontFamily:'var(--mono)', fontSize:'9px', color:'var(--ink-3)'}}>
                                     <span>2</span><span>11 Mt CO₂eq</span>
                                 </div>
                             </div>
@@ -926,10 +1284,11 @@ function App() {
                     {region && (
                         <button onClick={() => setRegion(null)} style={{
                             position:'absolute', top:12, right:12, zIndex:10,
-                            background:'rgba(250,250,248,0.92)', backdropFilter:'blur(4px)',
+                            background:'rgba(250,250,248,0.96)', backdropFilter:'blur(4px)',
                             border:'1px solid var(--rule)', borderRadius:3,
                             fontFamily:'var(--sans)', fontSize:'11px', color:'var(--ink-2)',
-                            padding:'5px 10px', cursor:'pointer',
+                            padding:'6px 12px', cursor:'pointer',
+                            boxShadow:'0 2px 8px rgba(0,0,0,0.08)',
                         }}>
                             ← France entière
                         </button>
@@ -950,15 +1309,6 @@ function App() {
                     <div 
                         className={`resize-handle${isDragging ? ' dragging' : ''}`}
                         onMouseDown={handleMouseDown}
-                        style={{
-                            position: 'absolute',
-                            top: 0,
-                            bottom: 0,
-                            left: -4,
-                            width: 8,
-                            cursor: 'col-resize',
-                            zIndex: 100,
-                        }}
                     />
 
                     {/* radar */}
@@ -1029,7 +1379,8 @@ function App() {
                                 <div style={{marginTop:16, paddingTop:16, borderTop:'1px solid var(--rule)'}}>
                                     <p style={{fontFamily:'var(--mono)', fontSize:'9px', color:'var(--ink-3)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:8}}>Note de lecture</p>
                                     <p style={{fontFamily:'var(--sans)', fontSize:'11px', color:'var(--ink-2)', lineHeight:1.6}}>
-                                        Faites glisser le curseur d'année pour faire apparaître l'analyse décennale en bas de carte.
+                                        Faites glisser le curseur d'année pour faire apparaître l'analyse décennale en bas de carte. 
+                                        Survolez les régions pour voir des détails contextuels.
                                     </p>
                                 </div>
                             </div>
@@ -1039,7 +1390,11 @@ function App() {
                     {/* footer credit */}
                     <div style={{padding:'10px 16px', borderTop:'1px solid var(--rule)'}}>
                         <p style={{fontFamily:'var(--sans)', fontSize:'9px', color:'var(--ink-3)', lineHeight:1.5}}>
-                            Sources : Agreste · Citepa · SDES<br/>Recensements agricoles 1990–2020
+                            Sources : Agreste · Citepa · SDES<br/>
+                            Recensements agricoles 1990–2020<br/>
+                            <a onClick={() => setShowAbout(true)} style={{color:'var(--accent)', cursor:'pointer', textDecoration:'none', borderBottom:'1px solid var(--accent)'}}>
+                                En savoir plus sur les données
+                            </a>
                         </p>
                     </div>
                 </div>
