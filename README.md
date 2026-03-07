@@ -98,14 +98,6 @@ cd AgriScopeFR
 # Ouvrir index.html dans le navigateur
 ```
 
-### Déploiement sur GitHub Pages
-
-1. Renommer le fichier en `index.html`
-2. Créer un repository GitHub
-3. Uploader le fichier dans la branche `main`
-4. Activer GitHub Pages : **Settings → Pages → Source: `main` branch**
-5. Le site sera disponible à : `https://[username].github.io/AgriScopeFR/`
-
 ---
 
 ## Structure des données
