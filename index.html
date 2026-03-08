@@ -611,10 +611,18 @@ function AboutModal({ onClose }) {
                             </p>
                             <p style={{marginBottom:8}}>
                                 <strong>Géométries cartographiques</strong><br/>
-                                <a href="https://github.com/gregoiredavid/france-geojson" target="_blank" rel="noopener" 
+                                <a href="https://github.com/gregoiredavid/france-geojson" target="_blank" rel="noopener noreferrer"
                                    style={{color:'var(--accent)', textDecoration:'none', borderBottom:'1px solid var(--accent)'}}>
                                     france-geojson (Grégoire David)
                                 </a> — contours régionaux simplifiés (version 2021).
+                            </p>
+                            <p style={{marginBottom:8}}>
+                                <strong>Notebook de pré-traitement</strong><br/>
+                                L'exploration et la mise en forme des données ont été réalisées dans un notebook Observable :{' '}
+                                <a href="https://observablehq.com/d/ee5b83dd76545896" target="_blank" rel="noopener noreferrer"
+                                   style={{color:'var(--accent)', textDecoration:'none', borderBottom:'1px solid var(--accent)'}}>
+                                    AgriScopeFR — Observable notebook
+                                </a>.
                             </p>
                         </div>
                     </section>
@@ -979,7 +987,7 @@ function App() {
             const col = COLORS[dom];
             const pts = keys.map((k,i) => {
                 const a = i*slc - Math.PI/2, r = (cd[k]/100)*R;
-                return {x: r*Math.cos(a), y: r*Math.sin(a)};
+                return {x: r*Math.cos(a), y: r*Math.sin(a), k, v: cd[k], a};
             });
             g.append('path').datum(pts).attr('d',lineGen)
              .attr('fill',col).attr('fill-opacity', region ? 0.18 : 0.05)
@@ -987,6 +995,21 @@ function App() {
             pts.forEach(pt => {
                 g.append('circle').attr('cx',pt.x).attr('cy',pt.y).attr('r', region ? 2.5 : 1.5)
                  .attr('fill',col).attr('stroke','#FAFAF8').attr('stroke-width', region ? 1 : 0.5);
+
+                /* percentage label — only when a single region is shown */
+                if (region && pt.v > 0) {
+                    const offset = 11;
+                    const lx = pt.x + offset * Math.cos(pt.a);
+                    const ly = pt.y + offset * Math.sin(pt.a);
+                    g.append('text')
+                        .attr('x', lx).attr('y', ly)
+                        .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+                        .attr('font-size', '8px').attr('font-weight', '500')
+                        .attr('font-family', "'IBM Plex Mono', monospace")
+                        .attr('fill', col)
+                        .style('pointer-events', 'none')
+                        .text(`${pt.v}%`);
+                }
             });
         });
 
