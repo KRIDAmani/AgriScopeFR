@@ -41,12 +41,10 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
 
-        /* range input */
         input[type=range] {
             -webkit-appearance: none;
             appearance: none;
@@ -73,11 +71,10 @@
             cursor: pointer;
         }
 
-        /* map region hover */
+
         .region-path { transition: opacity 0.15s; cursor: pointer; }
         .region-path:hover { opacity: 0.78; }
 
-        /* emoji map animations — subtle */
         @keyframes sway  { 0%,100%{transform:translateX(0)}  40%{transform:translateX(5px)}  70%{transform:translateX(-4px)} }
         @keyframes bob   { 0%,100%{transform:translateY(0)}  50%{transform:translateY(-5px)} }
         @keyframes tilt  { 0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)} }
@@ -85,7 +82,6 @@
         .e-bob  { animation: bob  4s ease-in-out infinite; }
         .e-tilt { animation: tilt 3s ease-in-out infinite; }
 
-        /* bulletin */
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to   { transform: translateY(0);    opacity: 1; }
@@ -101,7 +97,6 @@
         .bulletin-in { animation: slideUp 0.38s cubic-bezier(0.16,1,0.3,1) forwards; }
         .fade-in     { animation: fadeIn 0.4s ease forwards; }
 
-        /* indicator tabs */
         .ind-tab {
             font-family: var(--sans);
             font-size: 12px;
@@ -122,7 +117,6 @@
             border-color: var(--ink);
         }
 
-        /* play button */
         .play-btn {
             font-family: var(--sans);
             font-size: 12px;
@@ -139,7 +133,6 @@
         .play-btn:hover { border-color: var(--ink-2); color: var(--ink); }
         .play-btn.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 
-        /* export buttons */
         .exp-btn {
             font-family: var(--sans);
             font-size: 11px;
@@ -154,7 +147,7 @@
         }
         .exp-btn:hover { color: var(--ink); border-color: var(--ink-2); }
 
-        /* stat bar */
+
         .stat-bar-track {
             width: 80px;
             height: 3px;
@@ -168,7 +161,6 @@
             transition: width 0.4s ease;
         }
 
-        /* RESIZE HANDLE */
         .resize-handle {
             position: absolute;
             top: 0;
@@ -198,7 +190,6 @@
             height: 100%;
         }
 
-        /* MODAL */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -270,7 +261,6 @@
         }
         .info-btn:hover { color: var(--ink); border-color: var(--ink-2); }
 
-        /* Tooltip */
         .tooltip {
             position: absolute;
             background: rgba(28, 25, 23, 0.95);
@@ -303,9 +293,7 @@
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
-/* ─────────────────────────────────────────
-   DATA
-───────────────────────────────────────── */
+
 const CROP_DATA = {
     1990: {
         "Île-de-France":              {g:70,e:12,m:5, v:0, f:2, a:11},
@@ -424,14 +412,13 @@ const ENV_DATA = {
     },
 };
 
-/* colors chosen to feel like actual land */
 const COLORS = {
-    g: '#C9AA6B', // wheat / céréales
-    e: '#7A8C6E', // pasture / élevage
-    m: '#5C7A52', // dark leaf / maraîchage
-    v: '#826B9E', // grape / viticulture
-    f: '#B56B52', // fruit skin / fruits
-    a: '#9E9690', // neutral / autres
+    g: '#C9AA6B', 
+    e: '#7A8C6E', 
+    m: '#5C7A52', 
+    v: '#826B9E', 
+    f: '#B56B52', 
+    a: '#9E9690', 
 };
 
 const LABELS = { g:'Grandes cultures', e:'Élevage', m:'Maraîchage', v:'Viticulture', f:'Fruits', a:'Autres' };
@@ -440,16 +427,12 @@ const ANIM   = { g:'e-sway', e:'e-bob', m:'e-bob', v:'e-tilt', f:'e-bob', a:'' }
 
 const PREV = {2000:1990, 2010:2000, 2020:2010};
 
-/* ─────────────────────────────────────────
-   COMPUTE BULLETIN TEXT
-───────────────────────────────────────── */
 function makeBulletin(year, region) {
     const prev = PREV[year];
     if (!prev) return null;
 
     const scope = region ? [region] : Object.keys(CROP_DATA[year]).slice(0, 8);
 
-    // biggest crop shift
     let maxD = 0, bigKey = '', bigReg = '';
     const keyMap = { g:'grandes cultures', e:"l'élevage", m:'le maraîchage', v:'la viticulture', f:'les fruits' };
     scope.forEach(r => {
@@ -461,7 +444,6 @@ function makeBulletin(year, region) {
         });
     });
 
-    // water & GES
     const wDs=[], gDs=[];
     scope.forEach(r => {
         const c = ENV_DATA[year]?.[r], p = ENV_DATA[prev]?.[r];
@@ -490,9 +472,6 @@ function makeBulletin(year, region) {
     return { year, prev, cropLine, waterLine, gesLine };
 }
 
-/* ─────────────────────────────────────────
-   MODALS
-───────────────────────────────────────── */
 function WelcomeModal({ onClose }) {
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -727,9 +706,7 @@ function AboutModal({ onClose }) {
     );
 }
 
-/* ─────────────────────────────────────────
-   APP
-───────────────────────────────────────── */
+
 function App() {
     const [geo, setGeo]                   = useState(null);
     const [region, setRegion]             = useState(null);
@@ -751,14 +728,12 @@ function App() {
     const prevYrRef = useRef(null);
     const timerRef  = useRef(null);
 
-    // load geo
     useEffect(() => {
         fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/regions-version-simplifiee.geojson')
             .then(r => r.json()).then(setGeo)
             .catch(() => setGeo({type:'FeatureCollection',features:[]}));
     }, []);
 
-    // resize observer
     useEffect(() => {
         if (!mapEl.current) return;
         const el = mapEl.current;
@@ -769,7 +744,6 @@ function App() {
         return () => obs.disconnect();
     }, []);
 
-    // play
     useEffect(() => {
         if (!playing) return;
         const yrs = [1990,2000,2010,2020];
@@ -777,7 +751,6 @@ function App() {
         return () => clearTimeout(t);
     }, [playing, year]);
 
-    // bulletin on year change
     useEffect(() => {
         if (prevYrRef.current !== null && prevYrRef.current !== year) {
             const b = makeBulletin(year, region);
@@ -791,7 +764,7 @@ function App() {
         prevYrRef.current = year;
     }, [year, region]);
 
-    // RESIZE HANDLER
+
     const handleMouseDown = useCallback((e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -823,7 +796,6 @@ function App() {
         return entries.reduce((a,b) => a[1]>b[1]?a:b)[0];
     };
 
-    /* DRAW MAP */
     useEffect(() => {
         if (!mapEl.current || !geo) return;
         const W = mapSize.w || mapEl.current.clientWidth;
@@ -907,7 +879,6 @@ function App() {
                     .style('pointer-events','none')
                     .text(name);
 
-                /* emoji indicators on dominant view */
                 if (cd && ind === 'cultures') {
                     const top = ['g','e','m','v','f']
                         .map(k => ({k, v: cd[k]}))
@@ -945,7 +916,6 @@ function App() {
 
     }, [region, year, ind, geo, mapSize]);
 
-    /* DRAW RADAR */
     useEffect(() => {
         if (!radarEl.current) return;
         const W=280, H=260, PAD=46, R=Math.min(W,H)/2-PAD;
@@ -963,7 +933,6 @@ function App() {
              .attr('stroke','#E2DDD8').attr('stroke-width', i===4 ? 1 : 0.5);
         });
 
-        // axes + labels
         keys.forEach((k,i) => {
             const a = i*slc - Math.PI/2;
             const x = R*Math.cos(a), y = R*Math.sin(a);
@@ -996,7 +965,6 @@ function App() {
                 g.append('circle').attr('cx',pt.x).attr('cy',pt.y).attr('r', region ? 2.5 : 1.5)
                  .attr('fill',col).attr('stroke','#FAFAF8').attr('stroke-width', region ? 1 : 0.5);
 
-                /* percentage label — only when a single region is shown */
                 if (region && pt.v > 0) {
                     const offset = 11;
                     const lx = pt.x + offset * Math.cos(pt.a);
@@ -1015,7 +983,6 @@ function App() {
 
     }, [region, year]);
 
-    /* DRAW EVOLUTION */
     useEffect(() => {
         if (!evoEl.current || !region) return;
         const W=290, H=170, m={top:12,right:64,bottom:32,left:36};
@@ -1030,7 +997,6 @@ function App() {
         const y = d3.scaleLinear().domain([0,80]).range([H-m.bottom,m.top]);
         const lineGen = d3.line().x(d=>x(d.yr)).y(d=>y(d.val)).curve(d3.curveMonotoneX);
 
-        // grid
         [20,40,60,80].forEach(v => {
             svg.append('line').attr('x1',m.left).attr('x2',W-m.right)
                .attr('y1',y(v)).attr('y2',y(v))
@@ -1063,7 +1029,6 @@ function App() {
                .attr('font-family',"'IBM Plex Sans',sans-serif").text(LABELS[k]);
         });
 
-        // year marker
         svg.append('line')
            .attr('x1',x(year)).attr('x2',x(year))
            .attr('y1',m.top).attr('y2',H-m.bottom)
@@ -1075,7 +1040,6 @@ function App() {
     const regionCrops = region ? CROP_DATA[year]?.[region] : null;
     const regionEnv   = region ? ENV_DATA[year]?.[region]  : null;
 
-    /* exports */
     const exportPNG = async () => {
         try {
             const canvas = await html2canvas(mapEl.current, {backgroundColor:'#F4F1EC',scale:2});
@@ -1107,7 +1071,6 @@ function App() {
         } catch(e) { alert('Erreur export PDF'); }
     };
 
-    /* ═══ RENDER ═══ */
     return (
         <div style={{height:'100vh', display:'flex', flexDirection:'column', background:'var(--bg)', overflow:'hidden', userSelect: isDragging ? 'none' : 'auto'}}>
 
